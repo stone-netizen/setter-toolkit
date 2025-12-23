@@ -442,6 +442,32 @@ export default function Results() {
         </DialogContent>
       </Dialog>
 
+      {/* Reactivation Breakdown & ROI Calculator */}
+      {results.reactivationOpportunity && (
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15, duration: 0.5 }}
+          className="py-4 px-4"
+        >
+          <div className="max-w-4xl mx-auto space-y-6">
+            <ReactivationBreakdown 
+              dormantLeads={results.reactivationOpportunity.dormantLeads}
+              pastCustomers={results.reactivationOpportunity.pastCustomers}
+              hasDormantLeads={formData.hasDormantLeads || false}
+              hasPastCustomers={formData.hasPastCustomers || false}
+              everRecontactedDormant={formData.everRecontactedDormant ?? null}
+              sendsReengagementCampaigns={formData.sendsReengagementCampaigns ?? null}
+              percentageRecontactedDormant={formData.percentageRecontactedDormant}
+            />
+            <ReactivationROICalculator 
+              reactivation={results.reactivationOpportunity}
+              customerLifetimeValue={formData.avgTransactionValue || 1000}
+            />
+          </div>
+        </motion.section>
+      )}
+
       {/* Chart Section */}
       <motion.section
         initial={{ opacity: 0, y: 20 }}

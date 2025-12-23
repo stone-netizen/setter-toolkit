@@ -8,6 +8,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Landing from "./pages/Landing";
 import Calculator from "./pages/Calculator";
 import Results from "./pages/Results";
+import LeakDashboard from "./pages/LeakDashboard";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Leads from "./pages/Leads";
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/" element={<Landing />} />
             <Route path="/calculator" element={<Calculator />} />
             <Route path="/results" element={<Results />} />
+            <Route path="/leak-dashboard" element={<LeakDashboard />} />
             <Route path="/auth" element={<Auth />} />
             <Route
               path="/dashboard"
