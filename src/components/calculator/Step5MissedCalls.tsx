@@ -1,3 +1,4 @@
+import { UseFormReturn } from "react-hook-form";
 import { FormField } from "./FormField";
 import { CalculatorFormData } from "@/hooks/useCalculatorForm";
 import { cn } from "@/lib/utils";
@@ -5,23 +6,20 @@ import { Slider } from "@/components/ui/slider";
 import { PhoneMissed } from "lucide-react";
 
 interface StepProps {
-  formData: CalculatorFormData;
-  errors: Partial<Record<keyof CalculatorFormData, string>>;
-  updateField: <K extends keyof CalculatorFormData>(
-    field: K,
-    value: CalculatorFormData[K]
-  ) => void;
+  form: UseFormReturn<CalculatorFormData>;
 }
 
-export const Step5MissedCalls = ({ formData, errors, updateField }: StepProps) => {
-  const percentage = Number(formData.missedCallsPercentage) || 0;
+export const Step5MissedCalls = ({ form }: StepProps) => {
+  const { watch, setValue, formState: { errors } } = form;
+  const missedCallsPercentage = watch("missedCallsPercentage");
+  const percentage = Number(missedCallsPercentage) || 0;
 
   return (
     <div className="space-y-6">
       <FormField
         label="Estimated Missed Calls Percentage"
         required
-        error={errors.missedCallsPercentage}
+        error={errors.missedCallsPercentage?.message}
         helpText="What percentage of calls do you estimate you can't answer?"
       >
         <div className="space-y-6">
@@ -59,7 +57,7 @@ export const Step5MissedCalls = ({ formData, errors, updateField }: StepProps) =
             <Slider
               value={[percentage]}
               onValueChange={(values) =>
-                updateField("missedCallsPercentage", String(values[0]))
+                setValue("missedCallsPercentage", String(values[0]))
               }
               max={100}
               min={0}

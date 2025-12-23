@@ -1,21 +1,17 @@
+import { UseFormReturn } from "react-hook-form";
 import { FormField } from "./FormField";
 import { CalculatorFormData } from "@/hooks/useCalculatorForm";
 import { cn } from "@/lib/utils";
 import { CheckCircle2, XCircle, Star, Mail, MessageSquare } from "lucide-react";
 
 interface StepProps {
-  formData: CalculatorFormData;
-  errors: Partial<Record<keyof CalculatorFormData, string>>;
-  updateField: <K extends keyof CalculatorFormData>(
-    field: K,
-    value: CalculatorFormData[K]
-  ) => void;
+  form: UseFormReturn<CalculatorFormData>;
 }
 
 interface ToggleCardProps {
   label: string;
   icon: React.ReactNode;
-  value: boolean | null;
+  value: boolean | null | undefined;
   onChange: (value: boolean) => void;
   helpText?: string;
 }
@@ -62,7 +58,13 @@ const ToggleCard = ({ label, icon, value, onChange, helpText }: ToggleCardProps)
   </div>
 );
 
-export const Step6OnlinePresence = ({ formData, errors, updateField }: StepProps) => {
+export const Step6OnlinePresence = ({ form }: StepProps) => {
+  const { watch, setValue, formState: { errors } } = form;
+  
+  const respondsToReviews = watch("respondsToReviews");
+  const usesEmailMarketing = watch("usesEmailMarketing");
+  const hasChatWidget = watch("hasChatWidget");
+
   return (
     <div className="space-y-4">
       <p className="text-sm text-slate-500 mb-6">
@@ -71,30 +73,30 @@ export const Step6OnlinePresence = ({ formData, errors, updateField }: StepProps
 
       <FormField
         label=""
-        error={errors.respondsToReviews}
+        error={errors.respondsToReviews?.message}
       >
         <div className="space-y-4">
           <ToggleCard
             label="Do you respond to Google reviews?"
             icon={<Star className="w-5 h-5" />}
-            value={formData.respondsToReviews}
-            onChange={(value) => updateField("respondsToReviews", value)}
+            value={respondsToReviews}
+            onChange={(value) => setValue("respondsToReviews", value)}
             helpText="Responding to reviews builds trust and improves SEO"
           />
 
           <ToggleCard
             label="Do you use email marketing for past leads?"
             icon={<Mail className="w-5 h-5" />}
-            value={formData.usesEmailMarketing}
-            onChange={(value) => updateField("usesEmailMarketing", value)}
+            value={usesEmailMarketing}
+            onChange={(value) => setValue("usesEmailMarketing", value)}
             helpText="Email marketing helps nurture leads and drive repeat business"
           />
 
           <ToggleCard
             label="Do you have a chat widget on your website?"
             icon={<MessageSquare className="w-5 h-5" />}
-            value={formData.hasChatWidget}
-            onChange={(value) => updateField("hasChatWidget", value)}
+            value={hasChatWidget}
+            onChange={(value) => setValue("hasChatWidget", value)}
             helpText="Chat widgets capture leads who prefer not to call"
           />
         </div>
