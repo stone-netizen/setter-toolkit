@@ -155,8 +155,9 @@ export default function LeakDashboard() {
   const dataFreshness = daysSinceAnalysis <= 7 ? "Fresh" : daysSinceAnalysis <= 30 ? "Recent" : "Stale";
 
   const reactivationValue = results.reactivationOpportunity?.monthlyLoss || 0;
-  const operationalValue = results.operationalLeaks.reduce((sum, l) => sum + l.monthlyLoss, 0);
-  const quickWinROI = results.reactivationOpportunity ? 
+  const operationalLeaks = results.operationalLeaks || results.leaks || [];
+  const operationalValue = operationalLeaks.reduce((sum: number, l: any) => sum + (l.monthlyLoss || 0), 0);
+  const quickWinROI = results.reactivationOpportunity?.expectedROI ? 
     parseFloat(results.reactivationOpportunity.expectedROI.split("-")[0]) : 0;
 
   // Implementation progress (mock data - would come from database in real app)
