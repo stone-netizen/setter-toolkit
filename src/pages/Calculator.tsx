@@ -9,10 +9,10 @@ import { useCalculatorForm, TOTAL_STEPS } from "@/hooks/useCalculatorForm";
 import { Step1BusinessInfo } from "@/components/calculator/Step1BusinessInfo";
 import { Step2LeadVolume } from "@/components/calculator/Step2LeadVolume";
 import { Step3SalesProcess } from "@/components/calculator/Step3SalesProcess";
-import { Step4CrmFollowup } from "@/components/calculator/Step4CrmFollowup";
-import { Step5MissedCalls } from "@/components/calculator/Step5MissedCalls";
-import { Step6OnlinePresence } from "@/components/calculator/Step6OnlinePresence";
-import { Step7ContactInfo } from "@/components/calculator/Step7ContactInfo";
+import { Step4Operations } from "@/components/calculator/Step4Operations";
+import { Step5Appointments } from "@/components/calculator/Step5Appointments";
+import { Step6TeamEfficiency } from "@/components/calculator/Step6TeamEfficiency";
+import { Step7CustomerValue } from "@/components/calculator/Step7CustomerValue";
 
 const Calculator = () => {
   const navigate = useNavigate();
@@ -29,10 +29,10 @@ const Calculator = () => {
     "Business Profile",
     "Lead Volume",
     "Sales Process",
-    "CRM & Follow-up",
-    "Missed Calls",
-    "Online Presence",
-    "Contact Information",
+    "Operations",
+    "Appointments",
+    "Team Efficiency",
+    "Customer Value",
   ];
 
   const handleBack = () => {
@@ -61,16 +61,32 @@ const Calculator = () => {
       case 3:
         return <Step3SalesProcess form={form} />;
       case 4:
-        return <Step4CrmFollowup form={form} />;
+        return <Step4Operations form={form} />;
       case 5:
-        return <Step5MissedCalls form={form} />;
+        return <Step5Appointments form={form} />;
       case 6:
-        return <Step6OnlinePresence form={form} />;
+        return <Step6TeamEfficiency form={form} />;
       case 7:
-        return <Step7ContactInfo form={form} />;
+        return <Step7CustomerValue form={form} />;
       default:
         return null;
     }
+  };
+
+  // Slide animation variants
+  const slideVariants = {
+    enter: (direction: number) => ({
+      x: direction > 0 ? 100 : -100,
+      opacity: 0,
+    }),
+    center: {
+      x: 0,
+      opacity: 1,
+    },
+    exit: (direction: number) => ({
+      x: direction < 0 ? 100 : -100,
+      opacity: 0,
+    }),
   };
 
   return (
@@ -117,13 +133,18 @@ const Calculator = () => {
       {/* Main Content */}
       <main className="pt-32 pb-32 px-6">
         <div className="max-w-[600px] mx-auto">
-          <AnimatePresence mode="wait">
+          <AnimatePresence mode="wait" custom={1}>
             <motion.div
               key={currentStep}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
+              custom={1}
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{
+                x: { type: "spring", stiffness: 300, damping: 30 },
+                opacity: { duration: 0.2 },
+              }}
             >
               {/* Card Container */}
               <div className="bg-white rounded-2xl shadow-xl shadow-black/20 p-8">
@@ -153,7 +174,7 @@ const Calculator = () => {
             disabled={!canContinue()}
             className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-6 h-auto rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
           >
-            {currentStep === TOTAL_STEPS ? "Calculate My Revenue Leaks" : "Continue"}
+            {currentStep === TOTAL_STEPS ? "Calculate My Revenue Leaks →" : "Continue"}
             {currentStep !== TOTAL_STEPS && <span className="ml-2">→</span>}
           </Button>
         </div>
