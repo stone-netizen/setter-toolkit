@@ -20,13 +20,11 @@ import {
   Mail,
   Link2,
   Check,
-  LayoutDashboard,
-  Sparkles,
-  CheckCircle2,
   ArrowRight,
+  CheckCircle2,
+  ArrowUpRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -35,15 +33,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Cell,
-  ResponsiveContainer,
-  Tooltip,
-} from "recharts";
 import {
   formatCurrency,
   Leak,
@@ -58,18 +47,35 @@ import { CalendlyModal } from "@/components/CalendlyModal";
 
 const RESULTS_STORAGE_KEY = "leakDetectorResults";
 
-const SEVERITY_COLORS = {
-  critical: "#ef4444",
-  high: "#f97316",
-  medium: "#eab308",
-  low: "#10b981",
-};
-
-const SEVERITY_BG = {
-  critical: "bg-red-500/10 text-red-400 border-red-500/20",
-  high: "bg-orange-500/10 text-orange-400 border-orange-500/20",
-  medium: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
-  low: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+const SEVERITY_CONFIG = {
+  critical: { 
+    color: "hsl(0 72% 51%)", 
+    bg: "bg-destructive/10", 
+    text: "text-destructive", 
+    border: "border-destructive/20",
+    label: "Critical"
+  },
+  high: { 
+    color: "hsl(25 95% 53%)", 
+    bg: "bg-orange-500/10", 
+    text: "text-orange-400", 
+    border: "border-orange-500/20",
+    label: "High"
+  },
+  medium: { 
+    color: "hsl(38 92% 50%)", 
+    bg: "bg-warning/10", 
+    text: "text-warning", 
+    border: "border-warning/20",
+    label: "Medium"
+  },
+  low: { 
+    color: "hsl(160 84% 39%)", 
+    bg: "bg-success/10", 
+    text: "text-success", 
+    border: "border-success/20",
+    label: "Low"
+  },
 };
 
 const LEAK_ICONS: Record<string, React.ReactNode> = {
@@ -80,101 +86,83 @@ const LEAK_ICONS: Record<string, React.ReactNode> = {
   unqualifiedLeads: <Target className="h-5 w-5" />,
   afterHours: <Clock className="h-5 w-5" />,
   holdTime: <Phone className="h-5 w-5" />,
-  reactivation: <Sparkles className="h-5 w-5" />,
+  reactivation: <Zap className="h-5 w-5" />,
 };
 
 const LEAK_PROBLEMS: Record<string, string[]> = {
   missedCalls: [
-    "Potential customers are calling but no one is answering",
-    "Each missed call is a potential deal walking to a competitor",
     "Callers who can't reach you rarely try again",
+    "Each missed call walks to a competitor",
+    "No voicemail = no second chance",
   ],
   slowResponse: [
-    "Leads contacted within 5 minutes are 100x more likely to convert",
-    "Response time directly correlates with close rates",
-    "Delayed responses signal poor customer service to prospects",
+    "5-minute response = 100x higher contact rate",
+    "Speed signals reliability to prospects",
+    "Competitors respond in minutes, not hours",
   ],
   noFollowUp: [
-    "80% of sales require 5+ follow-up attempts",
-    "Most salespeople give up after just 2 attempts",
-    "Leads that aren't followed up are essentially thrown away",
+    "80% of sales need 5+ follow-up attempts",
+    "Most give up after 2 attempts",
+    "Unfollowed leads = wasted ad spend",
   ],
   noShow: [
-    "Empty appointment slots cost time and money",
-    "Staff scheduled for no-shows can't serve other customers",
-    "No-shows often indicate weak booking confirmation processes",
+    "Empty slots cost time and revenue",
+    "Staff idle, can't serve others",
+    "Weak confirmation = weak commitment",
   ],
   unqualifiedLeads: [
-    "Time spent with poor-fit prospects is time not spent closing",
-    "Unqualified consultations drain team energy and morale",
-    "Every hour wasted has an opportunity cost",
+    "Hours wasted on poor-fit prospects",
+    "Drains team energy and morale",
+    "Every hour has opportunity cost",
   ],
   afterHours: [
-    "30%+ of calls come outside business hours",
-    "After-hours callers often have urgent needs",
-    "Competitors with 24/7 availability capture these leads",
+    "30%+ of calls come after hours",
+    "After-hours = high-intent buyers",
+    "Competitors with 24/7 capture these",
   ],
   holdTime: [
-    "Long hold times frustrate callers before you even speak",
-    "Every minute on hold increases hang-up likelihood by 10%",
-    "First impressions are made during the wait",
+    "Every hold minute = 10% hang-up rate",
+    "First impression made during wait",
+    "Frustration before you even speak",
   ],
 };
 
 const LEAK_FIXES: Record<string, { fix: string; roi: string; time: string }> = {
   missedCalls: {
-    fix: "Implement an AI answering service or overflow call handling to ensure every call is answered professionally, 24/7.",
-    roi: "Recover 70-90% of currently missed leads",
-    time: "1-2 weeks to implement",
+    fix: "AI answering or overflow call handling for 24/7 coverage.",
+    roi: "70-90% of missed leads recovered",
+    time: "1-2 weeks",
   },
   slowResponse: {
-    fix: "Set up automated instant text/email responses and implement a lead routing system that notifies the right person immediately.",
+    fix: "Automated instant text/email + smart lead routing.",
     roi: "2-3x improvement in contact rates",
-    time: "1 week to implement",
+    time: "1 week",
   },
   noFollowUp: {
-    fix: "Create an automated follow-up sequence with 6-8 touchpoints across email, SMS, and phone over 30 days.",
-    roi: "40-60% increase in conversions from existing leads",
-    time: "2-3 weeks to set up",
+    fix: "Automated 6-8 touchpoint sequence across channels.",
+    roi: "40-60% more conversions",
+    time: "2-3 weeks",
   },
   noShow: {
-    fix: "Implement automated SMS and email reminders 48hr, 24hr, and 2hr before appointments. Consider requiring deposits.",
-    roi: "Reduce no-shows by 50-70%",
-    time: "1 week to implement",
+    fix: "Automated reminders at 48hr, 24hr, and 2hr. Consider deposits.",
+    roi: "50-70% fewer no-shows",
+    time: "1 week",
   },
   unqualifiedLeads: {
-    fix: "Add a qualification form or 5-minute screening call before booking consultations to filter out poor-fit leads.",
-    roi: "Save 10+ hours per week of wasted time",
-    time: "1-2 weeks to implement",
+    fix: "Qualification form or 5-min screening before booking.",
+    roi: "10+ hours saved weekly",
+    time: "1-2 weeks",
   },
   afterHours: {
-    fix: "Deploy an AI receptionist or answering service to capture leads during evenings, weekends, and holidays.",
-    roi: "Capture 30-50% more leads",
-    time: "1 week to implement",
+    fix: "AI receptionist for evenings, weekends, holidays.",
+    roi: "30-50% more leads captured",
+    time: "1 week",
   },
   holdTime: {
-    fix: "Implement a callback system, hire additional staff, or use AI to handle initial inquiries and reduce wait times.",
-    roi: "Reduce abandoned calls by 60-80%",
-    time: "2-4 weeks to implement",
+    fix: "Callback system, additional staff, or AI for initial inquiries.",
+    roi: "60-80% fewer abandoned calls",
+    time: "2-4 weeks",
   },
-};
-
-const INDUSTRY_BENCHMARKS: Record<string, number> = {
-  "Med Spa": 45,
-  Dental: 55,
-  "Mortgage Lending": 35,
-  "Real Estate": 40,
-  Roofing: 60,
-  "Plumbing/HVAC": 50,
-  "Legal Services": 45,
-  "Financial Planning": 40,
-  "Fitness/Gyms": 55,
-  "Senior Care": 45,
-  "Auto Repair": 50,
-  Chiropractor: 50,
-  "Marketing Agency": 35,
-  SaaS: 30,
-  Other: 50,
 };
 
 interface StoredResults {
@@ -204,7 +192,6 @@ export default function Results() {
           navigate("/calculator");
         }
       } catch (e) {
-        console.error("Failed to parse saved results");
         navigate("/calculator");
       }
     } else {
@@ -212,10 +199,9 @@ export default function Results() {
     }
   }, [navigate]);
 
-  // Show sticky bar after scrolling
   useEffect(() => {
     const handleScroll = () => {
-      setShowStickyBar(window.scrollY > 500);
+      setShowStickyBar(window.scrollY > 600);
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
@@ -233,29 +219,13 @@ export default function Results() {
     });
   };
 
-  const scrollToLeak = (leakType: string) => {
-    setExpandedLeaks((prev) => new Set([...prev, leakType]));
-    setTimeout(() => {
-      leakRefs.current[leakType]?.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
-    }, 100);
-  };
-
   const handleEditInputs = () => {
     navigate("/calculator");
   };
 
   const handleDownloadPDF = () => {
-    toast.info("Coming soon!", {
-      description: "PDF generation will be available in a future update.",
-    });
-  };
-
-  const handleEmailResults = () => {
-    toast.info("Coming soon!", {
-      description: "Email delivery will be available in a future update.",
+    toast.info("Coming soon", {
+      description: "PDF export will be available in a future update.",
     });
   };
 
@@ -263,34 +233,24 @@ export default function Results() {
     navigator.clipboard.writeText(window.location.href);
     setLinkCopied(true);
     setTimeout(() => setLinkCopied(false), 2000);
-    toast.success("Link copied to clipboard!");
+    toast.success("Link copied");
   };
 
   if (!storedData) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500" />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   const { results, formData } = storedData;
+  const totalLoss = results.totalMonthlyLoss;
 
-  const chartData = results.leaks.map((leak) => ({
-    name: leak.label,
-    value: leak.monthlyLoss,
-    severity: leak.severity,
-    type: leak.type,
-  }));
-
-  const industryBenchmark = INDUSTRY_BENCHMARKS[formData.industry] || 50;
-  const worsePercentile = Math.min(95, Math.max(5, industryBenchmark + Math.random() * 20));
-
-  // Create action plan phases
-  const criticalLeaks = results.leaks.filter((l) => l.severity === "critical");
-  const highLeaks = results.leaks.filter((l) => l.severity === "high");
+  const criticalLeaks = results.leaks.filter((l) => l.severity === "critical" && l.monthlyLoss > 0);
+  const highLeaks = results.leaks.filter((l) => l.severity === "high" && l.monthlyLoss > 0);
   const otherLeaks = results.leaks.filter(
-    (l) => l.severity === "medium" || l.severity === "low"
+    (l) => (l.severity === "medium" || l.severity === "low") && l.monthlyLoss > 0
   );
 
   const phase1Recovery = criticalLeaks.reduce((sum, l) => sum + l.monthlyLoss, 0);
@@ -298,674 +258,592 @@ export default function Results() {
   const phase3Recovery = otherLeaks.reduce((sum, l) => sum + l.monthlyLoss, 0);
 
   return (
-    <div className="min-h-screen bg-slate-900">
+    <div className="min-h-screen bg-background custom-scrollbar">
       {/* Fixed Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-sm border-b border-slate-800">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="text-lg font-bold bg-gradient-to-r from-violet-400 to-indigo-400 text-transparent bg-clip-text">
-              LeakDetector
-            </div>
+      <header className="fixed top-0 left-0 right-0 z-50 glass-strong">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+          <div className="text-lg font-bold text-foreground tracking-tight">
+            LeakDetector
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleEditInputs}
-              className="border-slate-600 text-slate-300 hover:bg-slate-800"
-            >
-              <Edit3 className="h-4 w-4 mr-2" />
-              Edit Inputs
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleEditInputs}
+            className="border-border text-muted-foreground hover:text-foreground hover:bg-secondary"
+          >
+            <Edit3 className="h-4 w-4 mr-2" />
+            Edit
+          </Button>
         </div>
       </header>
 
-      {/* Reactivation Hero Card */}
-      {results.reactivationOpportunity && (
-        <motion.section
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="pt-24 pb-4 px-4"
-        >
-          <div className="max-w-4xl mx-auto">
-            <ReactivationHeroCard reactivation={results.reactivationOpportunity} />
-          </div>
-        </motion.section>
-      )}
+      <main className="pt-20">
+        {/* Reactivation Opportunity */}
+        {results.reactivationOpportunity && (
+          <section className="px-4 sm:px-6 py-6">
+            <div className="max-w-5xl mx-auto">
+              <ReactivationHeroCard reactivation={results.reactivationOpportunity} />
+            </div>
+          </section>
+        )}
 
-      {/* Hero Section with Big Loss Number */}
-      <motion.section
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="pt-24 pb-8 px-4"
-      >
-        <div className="max-w-4xl mx-auto">
-          <Card className="bg-gradient-to-br from-slate-800 to-slate-900 border-slate-700 overflow-hidden relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 to-transparent" />
-            <CardContent className="p-8 md:p-12 relative">
-              <div className="text-center">
-                <p className="text-slate-400 text-lg mb-2">{formData.businessName}</p>
-                <h1 className="text-2xl md:text-3xl font-medium text-slate-300 mb-4">
-                  You're Losing
+        {/* Hero Loss Section */}
+        <section className="px-4 sm:px-6 py-8 lg:py-12">
+          <div className="max-w-5xl mx-auto">
+            <div className="relative overflow-hidden rounded-2xl border border-destructive/20 bg-card p-8 lg:p-12">
+              {/* Subtle gradient overlay */}
+              <div className="absolute inset-0 bg-gradient-to-br from-destructive/5 via-transparent to-transparent" />
+              
+              <div className="relative text-center">
+                <p className="text-sm font-medium text-muted-foreground mb-2">
+                  {formData.businessName}
+                </p>
+                <h1 className="text-heading-lg font-bold text-foreground mb-6">
+                  Monthly Revenue Loss
                 </h1>
+                
+                {/* Big number */}
                 <motion.div
-                  initial={{ scale: 0.9, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.2, duration: 0.5 }}
-                  className="mb-4"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.1, duration: 0.4 }}
+                  className="mb-6"
                 >
-                  <span className="text-5xl md:text-7xl font-bold text-red-500">
+                  <span className="text-display-xl font-black text-gradient-destructive font-numeric">
                     {formatCurrency(results.totalMonthlyLoss)}
                   </span>
-                  <span className="text-2xl md:text-3xl text-red-400">/month</span>
+                  <span className="text-heading-lg text-destructive/70 font-normal">/mo</span>
                 </motion.div>
-                <p className="text-xl md:text-2xl text-slate-400 mb-6">
-                  ({formatCurrency(results.totalAnnualLoss)}/year)
+                
+                <p className="text-lg text-muted-foreground mb-8">
+                  {formatCurrency(results.totalAnnualLoss)} annually
                 </p>
-                <Badge
-                  variant="outline"
-                  className="text-orange-400 border-orange-500/30 bg-orange-500/10 px-4 py-2 text-sm"
-                >
-                  <AlertTriangle className="h-4 w-4 mr-2" />
-                  Worse than {worsePercentile.toFixed(0)}% of {formData.industry} businesses
-                </Badge>
-              </div>
 
-              {/* Main CTA - Book Strategy Call */}
-              <div className="mt-8 space-y-4">
-                <Button 
-                  size="lg"
-                  onClick={() => setIsCalendlyOpen(true)}
-                  className="w-full px-8 py-5 h-auto bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold text-lg rounded-xl hover:shadow-lg hover:shadow-violet-500/50 transition-all hover:scale-[1.02]"
-                >
-                  Book Your Free Strategy Call
-                </Button>
-                
-                <div className="flex items-center justify-center gap-2 text-sm text-slate-400">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                  15 minutes • No pressure • Free action plan
-                </div>
-                
-                <div className="grid grid-cols-2 gap-3">
+                {/* CTA buttons */}
+                <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-lg mx-auto">
+                  <Button 
+                    size="lg"
+                    onClick={() => setIsCalendlyOpen(true)}
+                    className="flex-1 h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg btn-shine"
+                  >
+                    Book Strategy Call
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
                   <Button 
                     variant="outline"
-                    className="px-4 py-3 h-auto bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-xl border border-slate-700 transition-all"
+                    size="lg"
                     onClick={handleDownloadPDF}
+                    className="flex-1 h-12 border-border text-foreground hover:bg-secondary font-medium rounded-lg"
                   >
-                    <Download className="h-4 w-4 mr-2" />
-                    Download Full Report
-                  </Button>
-                  <Button 
-                    variant="outline"
-                    className="px-4 py-3 h-auto bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl border border-slate-700 transition-all"
-                    onClick={handleEmailResults}
-                  >
-                    <Mail className="h-4 w-4 mr-2" />
-                    Email Me Results
+                    <Download className="mr-2 h-4 w-4" />
+                    Download Report
                   </Button>
                 </div>
+                
+                <p className="mt-4 text-xs text-muted-foreground">
+                  15 min • No pressure • Free action plan
+                </p>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      </motion.section>
-
-      {/* Share Modal */}
-      <Dialog open={shareModalOpen} onOpenChange={setShareModalOpen}>
-        <DialogContent className="bg-slate-800 border-slate-700 text-white">
-          <DialogHeader>
-            <DialogTitle className="text-xl text-white">Share Results</DialogTitle>
-            <DialogDescription className="text-slate-400">
-              Share your revenue leak analysis with your team
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 pt-4">
-            <div className="grid grid-cols-3 gap-4">
-              <button
-                className="flex flex-col items-center gap-2 p-4 rounded-lg bg-slate-700/50 hover:bg-slate-700 transition-colors"
-                onClick={() => toast.info("LinkedIn sharing coming soon!")}
-              >
-                <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center">
-                  <Linkedin className="h-6 w-6 text-white" />
-                </div>
-                <span className="text-sm text-slate-300">LinkedIn</span>
-              </button>
-              <button
-                className="flex flex-col items-center gap-2 p-4 rounded-lg bg-slate-700/50 hover:bg-slate-700 transition-colors"
-                onClick={() => toast.info("Twitter sharing coming soon!")}
-              >
-                <div className="w-12 h-12 rounded-full bg-sky-500 flex items-center justify-center">
-                  <Twitter className="h-6 w-6 text-white" />
-                </div>
-                <span className="text-sm text-slate-300">Twitter</span>
-              </button>
-              <button
-                className="flex flex-col items-center gap-2 p-4 rounded-lg bg-slate-700/50 hover:bg-slate-700 transition-colors"
-                onClick={() => toast.info("Email sharing coming soon!")}
-              >
-                <div className="w-12 h-12 rounded-full bg-emerald-500 flex items-center justify-center">
-                  <Mail className="h-6 w-6 text-white" />
-                </div>
-                <span className="text-sm text-slate-300">Email</span>
-              </button>
-            </div>
-            <div className="border-t border-slate-700 pt-4">
-              <p className="text-sm text-slate-400 mb-2">Or copy link</p>
-              <button
-                className="w-full flex items-center justify-between p-3 rounded-lg bg-slate-700/50 hover:bg-slate-700 transition-colors"
-                onClick={handleCopyLink}
-              >
-                <span className="text-sm text-slate-300 truncate">{window.location.href}</span>
-                {linkCopied ? (
-                  <Check className="h-4 w-4 text-emerald-400 flex-shrink-0 ml-2" />
-                ) : (
-                  <Link2 className="h-4 w-4 text-slate-400 flex-shrink-0 ml-2" />
-                )}
-              </button>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </section>
 
-      {/* Reactivation Breakdown & ROI Calculator */}
-      {results.reactivationOpportunity && (
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15, duration: 0.5 }}
-          className="py-4 px-4"
-        >
-          <div className="max-w-4xl mx-auto space-y-6">
-            <ReactivationBreakdown 
-              dormantLeads={results.reactivationOpportunity.dormantLeads}
-              pastCustomers={results.reactivationOpportunity.pastCustomers}
-              hasDormantLeads={formData.hasDormantLeads || false}
-              hasPastCustomers={formData.hasPastCustomers || false}
-              everRecontactedDormant={formData.everRecontactedDormant ?? null}
-              sendsReengagementCampaigns={formData.sendsReengagementCampaigns ?? null}
-              percentageRecontactedDormant={formData.percentageRecontactedDormant}
-            />
-            <ReactivationROICalculator 
-              reactivation={results.reactivationOpportunity}
-              customerLifetimeValue={formData.avgTransactionValue || 1000}
-            />
-          </div>
-        </motion.section>
-      )}
+        {/* Reactivation Details */}
+        {results.reactivationOpportunity && (
+          <section className="px-4 sm:px-6 py-6">
+            <div className="max-w-5xl mx-auto space-y-6">
+              <ReactivationBreakdown 
+                dormantLeads={results.reactivationOpportunity.dormantLeads}
+                pastCustomers={results.reactivationOpportunity.pastCustomers}
+                hasDormantLeads={formData.hasDormantLeads || false}
+                hasPastCustomers={formData.hasPastCustomers || false}
+                everRecontactedDormant={formData.everRecontactedDormant ?? null}
+                sendsReengagementCampaigns={formData.sendsReengagementCampaigns ?? null}
+                percentageRecontactedDormant={formData.percentageRecontactedDormant}
+              />
+              <ReactivationROICalculator 
+                reactivation={results.reactivationOpportunity}
+                customerLifetimeValue={formData.avgTransactionValue || 1000}
+              />
+            </div>
+          </section>
+        )}
 
-      {/* Chart Section */}
-      <motion.section
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2, duration: 0.5 }}
-        className="py-8 px-4"
-      >
-        <div className="max-w-4xl mx-auto">
-          <Card className="bg-slate-800/50 border-slate-700">
-            <CardHeader>
-              <CardTitle className="text-xl text-slate-200">
-                Loss Distribution by Category
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={chartData}
-                    layout="vertical"
-                    margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                  >
-                    <XAxis
-                      type="number"
-                      tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
-                      tick={{ fill: "#94a3b8", fontSize: 12 }}
-                      axisLine={{ stroke: "#475569" }}
-                      tickLine={{ stroke: "#475569" }}
-                    />
-                    <YAxis
-                      type="category"
-                      dataKey="name"
-                      tick={{ fill: "#94a3b8", fontSize: 12 }}
-                      axisLine={{ stroke: "#475569" }}
-                      tickLine={{ stroke: "#475569" }}
-                      width={150}
-                    />
-                    <Tooltip
-                      formatter={(value: number) => [formatCurrency(value), "Monthly Loss"]}
-                      contentStyle={{
-                        backgroundColor: "#1e293b",
-                        border: "1px solid #475569",
-                        borderRadius: "8px",
-                      }}
-                      labelStyle={{ color: "#e2e8f0" }}
-                    />
-                    <Bar
-                      dataKey="value"
-                      radius={[0, 4, 4, 0]}
-                      cursor="pointer"
-                      onClick={(data) => scrollToLeak(data.type)}
+        {/* Loss Distribution Chart - Custom bars */}
+        <section className="px-4 sm:px-6 py-8 lg:py-12">
+          <div className="max-w-5xl mx-auto">
+            <div className="rounded-2xl border border-border bg-card p-6 lg:p-8">
+              <h2 className="text-heading font-bold text-foreground mb-8">
+                Loss by Category
+              </h2>
+              
+              <div className="space-y-4">
+                {results.leaks.filter(leak => leak.monthlyLoss > 0).map((leak, index) => {
+                  const severity = SEVERITY_CONFIG[leak.severity as keyof typeof SEVERITY_CONFIG];
+                  const percentage = totalLoss > 0 ? (leak.monthlyLoss / totalLoss) * 100 : 0;
+                  
+                  return (
+                    <motion.div
+                      key={leak.type}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.05, duration: 0.3 }}
+                      className="group"
                     >
-                      {chartData.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={SEVERITY_COLORS[entry.severity as keyof typeof SEVERITY_COLORS]}
-                        />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+                      {/* Header row */}
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <span className="flex h-6 w-6 items-center justify-center rounded text-xs font-bold bg-secondary text-muted-foreground">
+                            {index + 1}
+                          </span>
+                          <span className="text-sm font-medium text-foreground">
+                            {leak.label}
+                          </span>
+                        </div>
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-lg font-bold text-foreground font-numeric">
+                            ${(leak.monthlyLoss / 1000).toFixed(1)}K
+                          </span>
+                          <span className="text-xs text-muted-foreground">/mo</span>
+                        </div>
+                      </div>
+                      
+                      {/* Bar */}
+                      <div className="relative h-8 bg-secondary rounded-lg overflow-hidden">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${percentage}%` }}
+                          transition={{ delay: 0.2 + index * 0.05, duration: 0.5, ease: "easeOut" }}
+                          className="absolute inset-y-0 left-0 rounded-lg"
+                          style={{ backgroundColor: severity.color }}
+                        >
+                          {/* Subtle stripe pattern */}
+                          <div 
+                            className="absolute inset-0 opacity-10"
+                            style={{
+                              backgroundImage: "repeating-linear-gradient(90deg, transparent, transparent 8px, rgba(255,255,255,0.1) 8px, rgba(255,255,255,0.1) 16px)"
+                            }}
+                          />
+                        </motion.div>
+                        
+                        {/* Percentage label */}
+                        {percentage > 10 && (
+                          <div className="absolute inset-y-0 left-3 flex items-center">
+                            <span className="text-xs font-semibold text-white/90">
+                              {percentage.toFixed(0)}%
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </div>
-              <div className="flex flex-wrap justify-center gap-4 mt-4">
-                {Object.entries(SEVERITY_COLORS).map(([severity, color]) => (
-                  <div key={severity} className="flex items-center gap-2">
-                    <div
-                      className="w-3 h-3 rounded"
-                      style={{ backgroundColor: color }}
+              
+              {/* Legend */}
+              <div className="flex flex-wrap gap-4 mt-8 pt-6 border-t border-border">
+                {Object.entries(SEVERITY_CONFIG).map(([key, config]) => (
+                  <div key={key} className="flex items-center gap-2">
+                    <div 
+                      className="h-3 w-3 rounded-sm"
+                      style={{ backgroundColor: config.color }}
                     />
-                    <span className="text-sm text-slate-400 capitalize">{severity}</span>
+                    <span className="text-xs text-muted-foreground capitalize">{key}</span>
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      </motion.section>
+            </div>
+          </div>
+        </section>
 
-      {/* Leak Details */}
-      <motion.section
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4, duration: 0.5 }}
-        className="py-8 px-4"
-      >
-        <div className="max-w-4xl mx-auto space-y-4">
-          <h2 className="text-2xl font-bold text-slate-200 mb-6">
-            Leak Analysis Details
-          </h2>
-          {results.leaks.filter(leak => leak.monthlyLoss > 0).map((leak, index) => (
-            <motion.div
-              key={leak.type}
-              ref={(el) => (leakRefs.current[leak.type] = el)}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 * index, duration: 0.3 }}
-            >
-              <Card
-                className={`bg-slate-800/50 border-slate-700 overflow-hidden transition-all duration-300 ${
-                  expandedLeaks.has(leak.type) ? "ring-1 ring-slate-600" : ""
-                }`}
-              >
-                <button
-                  onClick={() => toggleLeak(leak.type)}
-                  className="w-full text-left p-6 flex items-center justify-between hover:bg-slate-700/30 transition-colors"
-                >
-                  <div className="flex items-center gap-4">
-                    <div
-                      className={`p-3 rounded-xl ${
-                        SEVERITY_BG[leak.severity as keyof typeof SEVERITY_BG]
-                      } border`}
+        {/* Leak Details */}
+        <section className="px-4 sm:px-6 py-8 lg:py-12">
+          <div className="max-w-5xl mx-auto">
+            <h2 className="text-heading-lg font-bold text-foreground mb-8">
+              Detailed Analysis
+            </h2>
+            
+            <div className="space-y-4">
+              {results.leaks.filter(leak => leak.monthlyLoss > 0).map((leak, index) => {
+                const severity = SEVERITY_CONFIG[leak.severity as keyof typeof SEVERITY_CONFIG];
+                const isExpanded = expandedLeaks.has(leak.type);
+                
+                return (
+                  <motion.div
+                    key={leak.type}
+                    ref={(el) => (leakRefs.current[leak.type] = el)}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05, duration: 0.3 }}
+                  >
+                    <div 
+                      className={`rounded-xl border bg-card overflow-hidden transition-all duration-200 ${
+                        isExpanded ? "border-primary/30" : "border-border hover:border-border/80"
+                      }`}
                     >
-                      {LEAK_ICONS[leak.type] || <DollarSign className="h-5 w-5" />}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-3">
-                        <h3 className="text-lg font-semibold text-slate-200">
-                          {leak.label}
-                        </h3>
-                        <Badge
-                          variant="outline"
-                          className={SEVERITY_BG[leak.severity as keyof typeof SEVERITY_BG]}
-                        >
-                          {leak.severity}
-                        </Badge>
-                        {leak.quickWin && (
-                          <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
-                            <Zap className="h-3 w-3 mr-1" />
-                            Quick Win
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
-                      <p className="text-xl font-bold text-red-400">
-                        {formatCurrency(leak.monthlyLoss)}/mo
-                      </p>
-                      <p className="text-sm text-slate-500">
-                        {formatCurrency(leak.annualLoss)}/yr
-                      </p>
-                    </div>
-                    {expandedLeaks.has(leak.type) ? (
-                      <ChevronUp className="h-5 w-5 text-slate-400" />
-                    ) : (
-                      <ChevronDown className="h-5 w-5 text-slate-400" />
-                    )}
-                  </div>
-                </button>
-                <AnimatePresence>
-                  {expandedLeaks.has(leak.type) && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="px-6 pb-6 pt-2 border-t border-slate-700">
-                        <div className="grid md:grid-cols-2 gap-6">
-                          {/* Problem Analysis */}
-                          <div>
-                            <h4 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">
-                              Why This Hurts
-                            </h4>
-                            <ul className="space-y-2">
-                              {LEAK_PROBLEMS[leak.type]?.map((problem, i) => (
-                                <li key={i} className="flex items-start gap-2 text-slate-300 text-sm">
-                                  <AlertTriangle className="h-4 w-4 text-orange-400 mt-0.5 flex-shrink-0" />
-                                  {problem}
-                                </li>
-                              ))}
-                            </ul>
+                      {/* Collapse header */}
+                      <button
+                        onClick={() => toggleLeak(leak.type)}
+                        className="w-full text-left p-5 lg:p-6 flex items-center justify-between gap-4 hover:bg-secondary/30 transition-colors"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className={`p-2.5 rounded-lg ${severity.bg} ${severity.text} border ${severity.border}`}>
+                            {LEAK_ICONS[leak.type] || <DollarSign className="h-5 w-5" />}
                           </div>
-                          {/* Fix & ROI */}
                           <div>
-                            <h4 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">
-                              The Fix
-                            </h4>
-                            <p className="text-slate-300 text-sm mb-4">
-                              {LEAK_FIXES[leak.type]?.fix}
-                            </p>
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                                <p className="text-xs text-emerald-400 font-medium">Expected ROI</p>
-                                <p className="text-sm text-slate-200 mt-1">
-                                  {LEAK_FIXES[leak.type]?.roi}
-                                </p>
-                              </div>
-                              <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                                <p className="text-xs text-blue-400 font-medium">Time to Fix</p>
-                                <p className="text-sm text-slate-200 mt-1">
-                                  {LEAK_FIXES[leak.type]?.time}
-                                </p>
-                              </div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h3 className="text-base font-semibold text-foreground">
+                                {leak.label}
+                              </h3>
+                              <Badge 
+                                variant="outline" 
+                                className={`text-xs ${severity.bg} ${severity.text} ${severity.border}`}
+                              >
+                                {severity.label}
+                              </Badge>
+                              {leak.quickWin && (
+                                <Badge className="text-xs bg-success/10 text-success border border-success/20">
+                                  <Zap className="h-3 w-3 mr-1" />
+                                  Quick Win
+                                </Badge>
+                              )}
                             </div>
                           </div>
                         </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
-      </motion.section>
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <p className="text-lg font-bold text-destructive font-numeric">
+                              {formatCurrency(leak.monthlyLoss)}
+                              <span className="text-sm font-normal text-muted-foreground">/mo</span>
+                            </p>
+                          </div>
+                          {isExpanded ? (
+                            <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                          ) : (
+                            <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                          )}
+                        </div>
+                      </button>
+                      
+                      {/* Expanded content */}
+                      <AnimatePresence>
+                        {isExpanded && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="px-5 lg:px-6 pb-6 pt-2 border-t border-border">
+                              <div className="grid md:grid-cols-2 gap-6">
+                                {/* Problems */}
+                                <div>
+                                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                                    Impact
+                                  </h4>
+                                  <ul className="space-y-2">
+                                    {LEAK_PROBLEMS[leak.type]?.map((problem, i) => (
+                                      <li key={i} className="flex items-start gap-2 text-sm text-foreground/80">
+                                        <AlertTriangle className="h-4 w-4 text-warning mt-0.5 flex-shrink-0" />
+                                        {problem}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                                
+                                {/* Solution */}
+                                <div>
+                                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                                    Solution
+                                  </h4>
+                                  <p className="text-sm text-foreground/80 mb-4">
+                                    {LEAK_FIXES[leak.type]?.fix}
+                                  </p>
+                                  <div className="grid grid-cols-2 gap-3">
+                                    <div className="p-3 rounded-lg bg-success/5 border border-success/10">
+                                      <p className="text-xs font-medium text-success mb-1">Expected ROI</p>
+                                      <p className="text-sm text-foreground">{LEAK_FIXES[leak.type]?.roi}</p>
+                                    </div>
+                                    <div className="p-3 rounded-lg bg-primary/5 border border-primary/10">
+                                      <p className="text-xs font-medium text-primary mb-1">Timeline</p>
+                                      <p className="text-sm text-foreground">{LEAK_FIXES[leak.type]?.time}</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
 
-      {/* Value Proposition Card - What Happens On Your Call */}
-      <motion.section
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6, duration: 0.5 }}
-        className="py-8 px-4"
-      >
-        <div className="max-w-4xl mx-auto">
-          <div className="p-8 rounded-2xl bg-gradient-to-br from-violet-500/10 to-indigo-500/10 border border-violet-500/20">
-            <div className="flex items-start gap-4 mb-6">
-              <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
-                <Calendar className="w-6 h-6 text-violet-400" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-white mb-2">
-                  What Happens On Your Strategy Call
-                </h3>
-                <p className="text-slate-400">
-                  I'll personally walk you through your results and show you exactly how to fix your biggest leaks.
-                </p>
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="flex gap-3">
-                <CheckCircle2 className="w-6 h-6 text-emerald-400 flex-shrink-0" />
+        {/* What Happens on Call */}
+        <section className="px-4 sm:px-6 py-8 lg:py-12">
+          <div className="max-w-5xl mx-auto">
+            <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 via-card to-card p-8 lg:p-10">
+              <div className="flex items-start gap-4 mb-8">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 border border-primary/20">
+                  <Calendar className="h-6 w-6 text-primary" />
+                </div>
                 <div>
-                  <div className="font-semibold text-white">Deep-dive into your top 3 leaks</div>
-                  <div className="text-sm text-slate-400">Which ones to fix first for maximum ROI</div>
+                  <h3 className="text-heading font-bold text-foreground mb-1">
+                    What Happens on Your Call
+                  </h3>
+                  <p className="text-muted-foreground">
+                    15 minutes to walk through your results and next steps.
+                  </p>
                 </div>
               </div>
               
-              <div className="flex gap-3">
-                <CheckCircle2 className="w-6 h-6 text-emerald-400 flex-shrink-0" />
-                <div>
-                  <div className="font-semibold text-white">Custom implementation roadmap</div>
-                  <div className="text-sm text-slate-400">Timeline, systems, and exact steps to recover this revenue</div>
-                </div>
+              <div className="space-y-4 mb-8">
+                {[
+                  { title: "Deep-dive into top 3 leaks", desc: "Which to fix first for maximum ROI" },
+                  { title: "Custom implementation roadmap", desc: "Timeline, systems, exact steps" },
+                  { title: "ROI projections", desc: "30/60/90 day expectations" },
+                  { title: "Fit assessment", desc: "Zero pressure, just a conversation" },
+                ].map((item, i) => (
+                  <div key={i} className="flex gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-foreground">{item.title}</p>
+                      <p className="text-sm text-muted-foreground">{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
               
-              <div className="flex gap-3">
-                <CheckCircle2 className="w-6 h-6 text-emerald-400 flex-shrink-0" />
-                <div>
-                  <div className="font-semibold text-white">ROI projections for each fix</div>
-                  <div className="text-sm text-slate-400">See exactly what to expect in 30/60/90 days</div>
-                </div>
-              </div>
-              
-              <div className="flex gap-3">
-                <CheckCircle2 className="w-6 h-6 text-emerald-400 flex-shrink-0" />
-                <div>
-                  <div className="font-semibold text-white">Decide if we're a fit to work together</div>
-                  <div className="text-sm text-slate-400">Zero pressure - just a conversation about your business</div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="mt-6 pt-6 border-t border-violet-500/20">
               <Button 
                 size="lg"
                 onClick={() => setIsCalendlyOpen(true)}
-                className="w-full px-6 py-4 h-auto bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold rounded-xl hover:shadow-lg transition-all"
+                className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg btn-shine"
               >
                 Book My 15-Minute Call
-                <ArrowRight className="w-5 h-5 ml-2" />
+                <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </div>
           </div>
-        </div>
-      </motion.section>
+        </section>
 
-      {/* Action Plan Section */}
-      <motion.section
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.7, duration: 0.5 }}
-        className="py-8 px-4"
-      >
-        <div className="max-w-4xl mx-auto">
-          <Card className="bg-slate-800/50 border-slate-700">
-            <CardHeader>
-              <CardTitle className="text-xl text-slate-200 flex items-center gap-2">
-                <Target className="h-5 w-5 text-emerald-400" />
-                Recommended Action Plan
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+        {/* Action Plan */}
+        <section className="px-4 sm:px-6 py-8 lg:py-12">
+          <div className="max-w-5xl mx-auto">
+            <div className="rounded-2xl border border-border bg-card p-6 lg:p-8">
+              <div className="flex items-center gap-3 mb-8">
+                <Target className="h-6 w-6 text-success" />
+                <h2 className="text-heading font-bold text-foreground">
+                  Recommended Action Plan
+                </h2>
+              </div>
+              
               <div className="space-y-4">
-                {/* Phase 1 */}
                 {criticalLeaks.length > 0 && (
-                  <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20">
-                    <div className="flex items-center justify-between mb-3">
+                  <div className="p-5 rounded-xl bg-destructive/5 border border-destructive/10">
+                    <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
-                        <Badge className="bg-red-500 text-white">Phase 1</Badge>
-                        <span className="text-slate-200 font-medium">
-                          Critical Fixes (Week 1-2)
-                        </span>
+                        <Badge className="bg-destructive text-destructive-foreground">Phase 1</Badge>
+                        <span className="font-medium text-foreground">Critical Fixes — Week 1-2</span>
                       </div>
-                      <span className="text-emerald-400 font-bold">
-                        +{formatCurrency(phase1Recovery * 0.7)}/mo recovery
+                      <span className="text-success font-bold font-numeric">
+                        +{formatCurrency(phase1Recovery * 0.7)}/mo
                       </span>
                     </div>
                     <ul className="space-y-2">
                       {criticalLeaks.map((leak) => (
-                        <li key={leak.type} className="flex items-center gap-2 text-slate-300 text-sm">
-                          <span className="w-2 h-2 rounded-full bg-red-500" />
-                          {leak.label} — {LEAK_FIXES[leak.type]?.fix.split(".")[0]}
+                        <li key={leak.type} className="flex items-center gap-2 text-sm text-foreground/80">
+                          <span className="h-1.5 w-1.5 rounded-full bg-destructive" />
+                          {leak.label}
                         </li>
                       ))}
                     </ul>
                   </div>
                 )}
 
-                {/* Phase 2 */}
                 {highLeaks.length > 0 && (
-                  <div className="p-4 rounded-lg bg-orange-500/10 border border-orange-500/20">
-                    <div className="flex items-center justify-between mb-3">
+                  <div className="p-5 rounded-xl bg-orange-500/5 border border-orange-500/10">
+                    <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
                         <Badge className="bg-orange-500 text-white">Phase 2</Badge>
-                        <span className="text-slate-200 font-medium">
-                          High Priority (Week 3-4)
-                        </span>
+                        <span className="font-medium text-foreground">High Priority — Week 3-4</span>
                       </div>
-                      <span className="text-emerald-400 font-bold">
-                        +{formatCurrency(phase2Recovery * 0.6)}/mo recovery
+                      <span className="text-success font-bold font-numeric">
+                        +{formatCurrency(phase2Recovery * 0.6)}/mo
                       </span>
                     </div>
                     <ul className="space-y-2">
                       {highLeaks.map((leak) => (
-                        <li key={leak.type} className="flex items-center gap-2 text-slate-300 text-sm">
-                          <span className="w-2 h-2 rounded-full bg-orange-500" />
-                          {leak.label} — {LEAK_FIXES[leak.type]?.fix.split(".")[0]}
+                        <li key={leak.type} className="flex items-center gap-2 text-sm text-foreground/80">
+                          <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
+                          {leak.label}
                         </li>
                       ))}
                     </ul>
                   </div>
                 )}
 
-                {/* Phase 3 */}
                 {otherLeaks.length > 0 && (
-                  <div className="p-4 rounded-lg bg-slate-700/30 border border-slate-600/30">
-                    <div className="flex items-center justify-between mb-3">
+                  <div className="p-5 rounded-xl bg-secondary/50 border border-border">
+                    <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
-                        <Badge className="bg-slate-600 text-white">Phase 3</Badge>
-                        <span className="text-slate-200 font-medium">
-                          Optimization (Month 2+)
-                        </span>
+                        <Badge variant="secondary">Phase 3</Badge>
+                        <span className="font-medium text-foreground">Optimization — Month 2+</span>
                       </div>
-                      <span className="text-emerald-400 font-bold">
-                        +{formatCurrency(phase3Recovery * 0.5)}/mo recovery
+                      <span className="text-success font-bold font-numeric">
+                        +{formatCurrency(phase3Recovery * 0.5)}/mo
                       </span>
                     </div>
                     <ul className="space-y-2">
                       {otherLeaks.map((leak) => (
-                        <li key={leak.type} className="flex items-center gap-2 text-slate-300 text-sm">
-                          <span className="w-2 h-2 rounded-full bg-slate-500" />
-                          {leak.label} — {LEAK_FIXES[leak.type]?.fix.split(".")[0]}
+                        <li key={leak.type} className="flex items-center gap-2 text-sm text-foreground/80">
+                          <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />
+                          {leak.label}
                         </li>
                       ))}
                     </ul>
                   </div>
                 )}
 
-                <div className="text-center pt-4">
-                  <p className="text-slate-400 text-sm mb-2">Total Potential Recovery</p>
-                  <p className="text-3xl font-bold text-emerald-400">
-                    {formatCurrency(results.totalMonthlyLoss * 0.65)}/month
-                  </p>
-                  <p className="text-slate-500 text-sm">
-                    ({formatCurrency(results.totalAnnualLoss * 0.65)}/year)
+                <div className="text-center pt-6 border-t border-border">
+                  <p className="text-sm text-muted-foreground mb-2">Total Potential Recovery</p>
+                  <p className="text-display font-black text-success font-numeric">
+                    {formatCurrency(results.totalMonthlyLoss * 0.65)}
+                    <span className="text-heading text-success/70 font-normal">/month</span>
                   </p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      </motion.section>
+            </div>
+          </div>
+        </section>
 
-      {/* Final CTA Section */}
-      <motion.section
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.8, duration: 0.5 }}
-        className="py-12 px-4"
-      >
-        <div className="max-w-4xl mx-auto">
-          <Card className="bg-gradient-to-br from-violet-900/50 to-slate-900 border-violet-500/30">
-            <CardContent className="p-8 md:p-12 text-center">
-              <h2 className="text-2xl md:text-3xl font-bold text-slate-200 mb-4">
+        {/* Final CTA */}
+        <section className="px-4 sm:px-6 py-12 lg:py-16">
+          <div className="max-w-5xl mx-auto">
+            <div className="rounded-2xl border border-accent/20 bg-gradient-to-br from-accent/10 via-primary/5 to-card p-8 lg:p-12 text-center">
+              <h2 className="text-heading-xl font-bold text-foreground mb-4">
                 Ready to fix these leaks?
               </h2>
-              <p className="text-slate-400 mb-8 max-w-lg mx-auto">
-                Get a personalized implementation plan and learn how to recover{" "}
-                <span className="text-emerald-400 font-semibold">
+              <p className="text-lg text-muted-foreground mb-8 max-w-lg mx-auto">
+                Get a personalized implementation plan to recover{" "}
+                <span className="text-success font-semibold">
                   {formatCurrency(results.totalMonthlyLoss * 0.65)}/month
-                </span>{" "}
-                in lost revenue.
+                </span>
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
                 <Button
                   size="lg"
-                  className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:shadow-lg hover:shadow-violet-500/50 text-white text-lg px-8 py-6 h-auto"
+                  className="flex-1 h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg btn-shine"
                   onClick={() => setIsCalendlyOpen(true)}
                 >
-                  <Phone className="h-5 w-5 mr-2" />
-                  Book 15-Minute Strategy Call
+                  <Phone className="h-4 w-4 mr-2" />
+                  Book Strategy Call
                 </Button>
                 <Button
                   variant="outline"
                   size="lg"
-                  className="border-slate-600 text-slate-300 hover:bg-slate-800 text-lg px-8 py-6 h-auto"
+                  className="flex-1 h-12 border-border text-foreground hover:bg-secondary font-medium rounded-lg"
                   onClick={handleDownloadPDF}
                 >
-                  <Download className="h-5 w-5 mr-2" />
-                  Download Full PDF Report
+                  <Download className="h-4 w-4 mr-2" />
+                  Download PDF
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
+        </section>
+
+        {/* Footer */}
+        <div className="py-8 text-center">
+          <Button
+            variant="ghost"
+            className="text-muted-foreground hover:text-foreground"
+            onClick={() => navigate("/")}
+          >
+            ← Back to Home
+          </Button>
         </div>
-      </motion.section>
+      </main>
 
-      {/* Footer */}
-      <div className="py-8 text-center">
-        <Button
-          variant="ghost"
-          className="text-slate-500 hover:text-slate-400"
-          onClick={() => navigate("/")}
-        >
-          ← Back to Home
-        </Button>
-      </div>
-
-      {/* Sticky CTA Bar */}
+      {/* Sticky CTA */}
       <AnimatePresence>
         {showStickyBar && (
           <motion.div
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
-            className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-slate-950/95 backdrop-blur-xl border-t border-slate-800"
+            className="fixed bottom-0 left-0 right-0 z-50 glass-strong border-t border-border"
           >
-            <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-              <div className="flex-1">
-                <div className="text-sm font-semibold text-white">
-                  Ready to recover {formatCurrency(results.totalMonthlyLoss)}/month?
-                </div>
-                <div className="text-xs text-slate-400">
-                  Book your free strategy call to get started
-                </div>
+            <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+              <div className="hidden sm:block">
+                <p className="text-sm font-medium text-foreground">
+                  Recover {formatCurrency(results.totalMonthlyLoss * 0.65)}/month
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Book your free strategy call
+                </p>
               </div>
               <Button 
                 onClick={() => setIsCalendlyOpen(true)}
-                className="flex-shrink-0 px-6 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-semibold rounded-lg hover:shadow-lg transition-all"
+                className="flex-shrink-0 h-10 px-6 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg"
               >
                 Book Free Call
+                <ArrowUpRight className="ml-1.5 h-4 w-4" />
               </Button>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Share Modal */}
+      <Dialog open={shareModalOpen} onOpenChange={setShareModalOpen}>
+        <DialogContent className="bg-card border-border text-foreground">
+          <DialogHeader>
+            <DialogTitle>Share Results</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Share your analysis with your team
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { icon: Linkedin, label: "LinkedIn", bg: "bg-blue-600" },
+                { icon: Twitter, label: "Twitter", bg: "bg-sky-500" },
+                { icon: Mail, label: "Email", bg: "bg-success" },
+              ].map(({ icon: Icon, label, bg }) => (
+                <button
+                  key={label}
+                  className="flex flex-col items-center gap-2 p-4 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors"
+                  onClick={() => toast.info(`${label} sharing coming soon`)}
+                >
+                  <div className={`h-10 w-10 rounded-full ${bg} flex items-center justify-center`}>
+                    <Icon className="h-5 w-5 text-white" />
+                  </div>
+                  <span className="text-xs text-muted-foreground">{label}</span>
+                </button>
+              ))}
+            </div>
+            <div className="border-t border-border pt-4">
+              <p className="text-xs text-muted-foreground mb-2">Or copy link</p>
+              <button
+                className="w-full flex items-center justify-between p-3 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors"
+                onClick={handleCopyLink}
+              >
+                <span className="text-sm text-muted-foreground truncate">{window.location.href}</span>
+                {linkCopied ? (
+                  <Check className="h-4 w-4 text-success flex-shrink-0 ml-2" />
+                ) : (
+                  <Link2 className="h-4 w-4 text-muted-foreground flex-shrink-0 ml-2" />
+                )}
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Calendly Modal */}
       <CalendlyModal 
