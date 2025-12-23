@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Zap } from "lucide-react";
+import { ArrowLeft, Zap, Search, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useCalculatorForm, TOTAL_STEPS } from "@/hooks/useCalculatorForm";
+import { calculateAllLeaks } from "@/utils/calculations";
 
 // Step Components
 import { Step1BusinessInfo } from "@/components/calculator/Step1BusinessInfo";
@@ -14,8 +16,11 @@ import { Step5Appointments } from "@/components/calculator/Step5Appointments";
 import { Step6TeamEfficiency } from "@/components/calculator/Step6TeamEfficiency";
 import { Step7CustomerValue } from "@/components/calculator/Step7CustomerValue";
 
+const RESULTS_STORAGE_KEY = "leakDetectorResults";
+
 const Calculator = () => {
   const navigate = useNavigate();
+  const [isCalculating, setIsCalculating] = useState(false);
   const {
     currentStep,
     form,
@@ -43,10 +48,32 @@ const Calculator = () => {
     }
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (currentStep === TOTAL_STEPS) {
-      // Submit form - navigate to results
-      navigate("/calculator/results");
+      // Show loading state
+      setIsCalculating(true);
+      
+      // Get form data
+      const formData = form.getValues();
+      
+      // Simulate calculation time for effect (can remove in production)
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      
+      // Calculate LTV and all leaks
+      const results = calculateAllLeaks(formData);
+      
+      // Save results to localStorage
+      localStorage.setItem(
+        RESULTS_STORAGE_KEY,
+        JSON.stringify({
+          results,
+          formData,
+          calculatedAt: new Date().toISOString(),
+        })
+      );
+      
+      // Navigate to results
+      navigate("/results");
     } else {
       nextStep();
     }
@@ -91,6 +118,45 @@ const Calculator = () => {
 
   return (
     <div className="min-h-screen bg-slate-900">
+      {/* Loading Overlay */}
+      <AnimatePresence>
+        {isCalculating && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-slate-900/95 backdrop-blur-sm flex flex-col items-center justify-center"
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.1 }}
+              className="text-center"
+            >
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                className="w-16 h-16 mx-auto mb-6"
+              >
+                <Loader2 className="w-16 h-16 text-emerald-500" />
+              </motion.div>
+              <h2 className="text-2xl font-bold text-white mb-2">
+                Analyzing your business...
+              </h2>
+              <p className="text-slate-400">
+                This takes ~30 seconds
+              </p>
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: "100%" }}
+                transition={{ duration: 2.5, ease: "easeInOut" }}
+                className="h-1 bg-emerald-500 rounded-full mt-6 max-w-xs mx-auto"
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-sm border-b border-slate-800">
         <div className="max-w-[600px] mx-auto px-6 py-4">
@@ -171,11 +237,20 @@ const Calculator = () => {
         <div className="max-w-[600px] mx-auto px-6 py-4">
           <Button
             onClick={handleContinue}
-            disabled={!canContinue()}
+            disabled={!canContinue() || isCalculating}
             className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-6 h-auto rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
           >
-            {currentStep === TOTAL_STEPS ? "Calculate My Revenue Leaks →" : "Continue"}
-            {currentStep !== TOTAL_STEPS && <span className="ml-2">→</span>}
+            {currentStep === TOTAL_STEPS ? (
+              <>
+                <Search className="w-4 h-4 mr-2" />
+                Generate My Report
+              </>
+            ) : (
+              <>
+                Continue
+                <span className="ml-2">→</span>
+              </>
+            )}
           </Button>
         </div>
       </footer>
