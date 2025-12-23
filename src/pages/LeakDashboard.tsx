@@ -91,7 +91,7 @@ export default function LeakDashboard() {
   }, [navigate]);
 
   const sortedAndFilteredLeaks = useMemo(() => {
-    if (!storedData) return [];
+    if (!storedData?.results?.allLeaks) return [];
 
     let leaks = [...storedData.results.allLeaks];
 
