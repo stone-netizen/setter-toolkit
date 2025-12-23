@@ -585,7 +585,7 @@ export default function Results() {
           <h2 className="text-2xl font-bold text-slate-200 mb-6">
             Leak Analysis Details
           </h2>
-          {results.leaks.map((leak, index) => (
+          {results.leaks.filter(leak => leak.monthlyLoss > 0).map((leak, index) => (
             <motion.div
               key={leak.type}
               ref={(el) => (leakRefs.current[leak.type] = el)}
