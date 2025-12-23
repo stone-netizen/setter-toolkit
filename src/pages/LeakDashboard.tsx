@@ -526,20 +526,22 @@ export default function LeakDashboard() {
                 </div>
               </div>
 
-              <div className="mt-6 p-4 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
-                <div className="flex items-center justify-between">
+              <div className="mt-6 p-4 bg-amber-500/10 rounded-lg border border-amber-500/20">
+                <div className="flex flex-col items-center text-center gap-3">
                   <div>
-                    <p className="text-slate-400 text-sm">Recovered so far</p>
-                    <p className="text-2xl font-bold text-emerald-400">
-                      {formatCurrency(reactivationValue * 0.4)}
+                    <p className="text-slate-300 font-medium mb-1">Ready to start recovering?</p>
+                    <p className="text-slate-400 text-sm">
+                      Launch your first reactivation campaign and start turning dormant leads into revenue.
                     </p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-slate-400 text-sm">Projected total recovery</p>
-                    <p className="text-2xl font-bold text-slate-200">
-                      {formatCurrency(results.totalMonthlyLoss * 0.65)}
-                    </p>
-                  </div>
+                  <Button
+                    className="bg-amber-500 hover:bg-amber-600 text-white"
+                    onClick={() => setShowCampaignBuilder(true)}
+                  >
+                    <Rocket className="w-4 h-4 mr-2" />
+                    Launch First Campaign
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
                 </div>
               </div>
             </CardContent>
