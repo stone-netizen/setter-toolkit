@@ -14,10 +14,24 @@ import {
   Target,
   Zap,
   Calendar,
+  Edit3,
+  X,
+  Linkedin,
+  Twitter,
+  Mail,
+  Link2,
+  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import {
   BarChart,
   Bar,
@@ -28,14 +42,14 @@ import {
   Tooltip,
 } from "recharts";
 import {
-  calculateAllLeaks,
   formatCurrency,
   Leak,
   CalculationResult,
 } from "@/utils/calculations";
 import { CalculatorFormData } from "@/hooks/useCalculatorForm";
+import { toast } from "sonner";
 
-const STORAGE_KEY = "leakdetector_calculator_form";
+const RESULTS_STORAGE_KEY = "leakDetectorResults";
 
 const SEVERITY_COLORS = {
   critical: "#ef4444",
@@ -155,25 +169,32 @@ const INDUSTRY_BENCHMARKS: Record<string, number> = {
   Other: 50,
 };
 
+interface StoredResults {
+  results: CalculationResult;
+  formData: CalculatorFormData;
+  calculatedAt: string;
+}
+
 export default function Results() {
   const navigate = useNavigate();
-  const [results, setResults] = useState<CalculationResult | null>(null);
-  const [formData, setFormData] = useState<CalculatorFormData | null>(null);
+  const [storedData, setStoredData] = useState<StoredResults | null>(null);
   const [expandedLeaks, setExpandedLeaks] = useState<Set<string>>(new Set());
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const leakRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
+    const saved = localStorage.getItem(RESULTS_STORAGE_KEY);
     if (saved) {
       try {
-        const parsed = JSON.parse(saved);
-        if (parsed.formData) {
-          setFormData(parsed.formData);
-          const calculatedResults = calculateAllLeaks(parsed.formData);
-          setResults(calculatedResults);
+        const parsed: StoredResults = JSON.parse(saved);
+        if (parsed.results && parsed.formData) {
+          setStoredData(parsed);
+        } else {
+          navigate("/calculator");
         }
       } catch (e) {
-        console.error("Failed to parse saved form data");
+        console.error("Failed to parse saved results");
         navigate("/calculator");
       }
     } else {
@@ -203,13 +224,32 @@ export default function Results() {
     }, 100);
   };
 
-  if (!results || !formData) {
+  const handleEditInputs = () => {
+    navigate("/calculator");
+  };
+
+  const handleDownloadPDF = () => {
+    toast.info("Coming soon!", {
+      description: "PDF generation will be available in a future update.",
+    });
+  };
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(window.location.href);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
+    toast.success("Link copied to clipboard!");
+  };
+
+  if (!storedData) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500" />
       </div>
     );
   }
+
+  const { results, formData } = storedData;
 
   const chartData = results.leaks.map((leak) => ({
     name: leak.label,
@@ -234,12 +274,33 @@ export default function Results() {
 
   return (
     <div className="min-h-screen bg-slate-900">
+      {/* Fixed Header with Edit Button */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-sm border-b border-slate-800">
+        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded bg-emerald-500 flex items-center justify-center">
+              <Zap className="w-4 h-4 text-slate-900" />
+            </div>
+            <span className="text-sm font-medium text-white">LeakDetector</span>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleEditInputs}
+            className="border-slate-600 text-slate-300 hover:bg-slate-800"
+          >
+            <Edit3 className="h-4 w-4 mr-2" />
+            Edit Inputs
+          </Button>
+        </div>
+      </header>
+
       {/* Hero Section */}
       <motion.section
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="py-12 px-4"
+        className="pt-24 pb-8 px-4"
       >
         <div className="max-w-4xl mx-auto">
           <Card className="bg-gradient-to-br from-slate-800 to-slate-900 border-slate-700 overflow-hidden relative">
@@ -277,6 +338,7 @@ export default function Results() {
                 <Button
                   variant="outline"
                   className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                  onClick={() => setShareModalOpen(true)}
                 >
                   <Share2 className="h-4 w-4 mr-2" />
                   Share Results
@@ -284,6 +346,7 @@ export default function Results() {
                 <Button
                   variant="outline"
                   className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                  onClick={handleDownloadPDF}
                 >
                   <Download className="h-4 w-4 mr-2" />
                   Download PDF
@@ -293,6 +356,63 @@ export default function Results() {
           </Card>
         </div>
       </motion.section>
+
+      {/* Share Modal */}
+      <Dialog open={shareModalOpen} onOpenChange={setShareModalOpen}>
+        <DialogContent className="bg-slate-800 border-slate-700 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-xl text-white">Share Results</DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Share your revenue leak analysis with your team
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="grid grid-cols-3 gap-4">
+              <button
+                className="flex flex-col items-center gap-2 p-4 rounded-lg bg-slate-700/50 hover:bg-slate-700 transition-colors"
+                onClick={() => toast.info("LinkedIn sharing coming soon!")}
+              >
+                <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center">
+                  <Linkedin className="h-6 w-6 text-white" />
+                </div>
+                <span className="text-sm text-slate-300">LinkedIn</span>
+              </button>
+              <button
+                className="flex flex-col items-center gap-2 p-4 rounded-lg bg-slate-700/50 hover:bg-slate-700 transition-colors"
+                onClick={() => toast.info("Twitter sharing coming soon!")}
+              >
+                <div className="w-12 h-12 rounded-full bg-sky-500 flex items-center justify-center">
+                  <Twitter className="h-6 w-6 text-white" />
+                </div>
+                <span className="text-sm text-slate-300">Twitter</span>
+              </button>
+              <button
+                className="flex flex-col items-center gap-2 p-4 rounded-lg bg-slate-700/50 hover:bg-slate-700 transition-colors"
+                onClick={() => toast.info("Email sharing coming soon!")}
+              >
+                <div className="w-12 h-12 rounded-full bg-emerald-500 flex items-center justify-center">
+                  <Mail className="h-6 w-6 text-white" />
+                </div>
+                <span className="text-sm text-slate-300">Email</span>
+              </button>
+            </div>
+            <div className="border-t border-slate-700 pt-4">
+              <p className="text-sm text-slate-400 mb-2">Or copy link</p>
+              <button
+                className="w-full flex items-center justify-between p-3 rounded-lg bg-slate-700/50 hover:bg-slate-700 transition-colors"
+                onClick={handleCopyLink}
+              >
+                <span className="text-sm text-slate-300 truncate">{window.location.href}</span>
+                {linkCopied ? (
+                  <Check className="h-4 w-4 text-emerald-400 flex-shrink-0 ml-2" />
+                ) : (
+                  <Link2 className="h-4 w-4 text-slate-400 flex-shrink-0 ml-2" />
+                )}
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Chart Section */}
       <motion.section
@@ -692,6 +812,7 @@ export default function Results() {
                   variant="outline"
                   size="lg"
                   className="border-slate-600 text-slate-300 hover:bg-slate-800 text-lg px-8"
+                  onClick={handleDownloadPDF}
                 >
                   <Download className="h-5 w-5 mr-2" />
                   Download Full PDF Report
