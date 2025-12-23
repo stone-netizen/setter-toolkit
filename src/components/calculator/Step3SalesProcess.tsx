@@ -44,7 +44,7 @@ export const Step3SalesProcess = ({ form }: StepProps) => {
             min={0}
             {...register("closedDealsPerMonth", { valueAsNumber: true })}
             className={cn(
-              "h-12 pl-12 bg-slate-50 border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
+              "h-12 pl-12 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
               errors.closedDealsPerMonth && "border-red-500 focus:ring-red-500 focus:border-red-500"
             )}
           />
@@ -101,7 +101,7 @@ export const Step3SalesProcess = ({ form }: StepProps) => {
         <Select value={avgResponseTime} onValueChange={(value) => setValue("avgResponseTime", value)}>
           <SelectTrigger
             className={cn(
-              "h-12 bg-slate-50 border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
+              "h-12 bg-slate-50 border-slate-200 text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
               errors.avgResponseTime && "border-red-500 focus:ring-red-500 focus:border-red-500"
             )}
           >
@@ -110,7 +110,7 @@ export const Step3SalesProcess = ({ form }: StepProps) => {
           </SelectTrigger>
           <SelectContent className="bg-white border-slate-200 shadow-lg z-50">
             {RESPONSE_TIMES.map((time) => (
-              <SelectItem key={time.value} value={time.value} className="hover:bg-slate-100">
+              <SelectItem key={time.value} value={time.value} className="text-slate-900 hover:bg-slate-100">
                 {time.label}
               </SelectItem>
             ))}
@@ -191,7 +191,7 @@ export const Step3SalesProcess = ({ form }: StepProps) => {
               max={100}
               {...register("percentageFollowedUp", { valueAsNumber: true })}
               className={cn(
-                "h-12 bg-slate-50 border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 pr-8",
+                "h-12 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 pr-8",
                 errors.percentageFollowedUp && "border-red-500 focus:ring-red-500 focus:border-red-500"
               )}
             />
@@ -213,7 +213,7 @@ export const Step3SalesProcess = ({ form }: StepProps) => {
           max={20}
           {...register("avgFollowUpAttempts", { valueAsNumber: true })}
           className={cn(
-            "h-12 bg-slate-50 border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
+            "h-12 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
             errors.avgFollowUpAttempts && "border-red-500 focus:ring-red-500 focus:border-red-500"
           )}
         />
@@ -233,7 +233,7 @@ export const Step3SalesProcess = ({ form }: StepProps) => {
             max={300}
             {...register("consultationLength", { valueAsNumber: true })}
             className={cn(
-              "h-12 bg-slate-50 border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 pr-16",
+              "h-12 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 pr-16",
               errors.consultationLength && "border-red-500 focus:ring-red-500 focus:border-red-500"
             )}
           />

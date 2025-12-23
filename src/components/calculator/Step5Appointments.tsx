@@ -94,7 +94,7 @@ export const Step5Appointments = ({ form }: StepProps) => {
                   min={0}
                   {...register("appointmentsBooked", { valueAsNumber: true })}
                   className={cn(
-                    "h-12 bg-slate-50 border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
+                    "h-12 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
                     errors.appointmentsBooked && "border-red-500"
                   )}
                 />
@@ -110,7 +110,7 @@ export const Step5Appointments = ({ form }: StepProps) => {
                   min={0}
                   {...register("appointmentsShowUp", { valueAsNumber: true })}
                   className={cn(
-                    "h-12 bg-slate-50 border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
+                    "h-12 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
                     errors.appointmentsShowUp && "border-red-500"
                   )}
                 />
@@ -220,7 +220,7 @@ export const Step5Appointments = ({ form }: StepProps) => {
                       min={1}
                       max={5}
                       {...register("reminderCount", { valueAsNumber: true })}
-                      className="h-12 bg-slate-50 border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                      className="h-12 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                     />
                   </FormField>
 
@@ -305,7 +305,7 @@ export const Step5Appointments = ({ form }: StepProps) => {
                   max={90}
                   {...register("daysUntilAppointment", { valueAsNumber: true })}
                   className={cn(
-                    "h-12 bg-slate-50 border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 pr-16",
+                    "h-12 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 pr-16",
                     errors.daysUntilAppointment && "border-red-500"
                   )}
                 />

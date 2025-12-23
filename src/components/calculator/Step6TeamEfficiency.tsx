@@ -34,7 +34,7 @@ export const Step6TeamEfficiency = ({ form }: StepProps) => {
             max={100}
             {...register("numSalesStaff", { valueAsNumber: true })}
             className={cn(
-              "h-12 pl-12 bg-slate-50 border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
+              "h-12 pl-12 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
               errors.numSalesStaff && "border-red-500"
             )}
           />
@@ -57,7 +57,7 @@ export const Step6TeamEfficiency = ({ form }: StepProps) => {
             max={500}
             {...register("avgHourlyLaborCost", { valueAsNumber: true })}
             className={cn(
-              "h-12 pl-12 bg-slate-50 border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 pr-12",
+              "h-12 pl-12 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 pr-12",
               errors.avgHourlyLaborCost && "border-red-500"
             )}
           />
@@ -124,7 +124,7 @@ export const Step6TeamEfficiency = ({ form }: StepProps) => {
                   max={100}
                   {...register("percentageUnqualified", { valueAsNumber: true })}
                   className={cn(
-                    "h-12 bg-slate-50 border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 pr-8",
+                    "h-12 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 pr-8",
                     errors.percentageUnqualified && "border-red-500"
                   )}
                 />
@@ -193,7 +193,7 @@ export const Step6TeamEfficiency = ({ form }: StepProps) => {
                 type="text"
                 placeholder="e.g., HubSpot, Salesforce, Zoho"
                 {...register("crmName")}
-                className="h-12 bg-slate-50 border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                className="h-12 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
               />
             </FormField>
           </motion.div>

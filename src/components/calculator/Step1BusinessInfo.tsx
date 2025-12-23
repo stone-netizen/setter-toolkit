@@ -32,7 +32,7 @@ export const Step1BusinessInfo = ({ form }: StepProps) => {
           placeholder="e.g., Smith Plumbing Co"
           {...register("businessName")}
           className={cn(
-            "h-12 bg-slate-50 border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
+            "h-12 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
             errors.businessName && "border-red-500 focus:ring-red-500 focus:border-red-500"
           )}
         />
@@ -47,7 +47,7 @@ export const Step1BusinessInfo = ({ form }: StepProps) => {
         <Select value={industry} onValueChange={(value) => setValue("industry", value)}>
           <SelectTrigger
             className={cn(
-              "h-12 bg-slate-50 border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
+              "h-12 bg-slate-50 border-slate-200 text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
               errors.industry && "border-red-500 focus:ring-red-500 focus:border-red-500"
             )}
           >
@@ -55,7 +55,7 @@ export const Step1BusinessInfo = ({ form }: StepProps) => {
           </SelectTrigger>
           <SelectContent className="bg-white border-slate-200 shadow-lg z-50">
             {INDUSTRIES.map((ind) => (
-              <SelectItem key={ind} value={ind} className="hover:bg-slate-100">
+              <SelectItem key={ind} value={ind} className="text-slate-900 hover:bg-slate-100">
                 {ind}
               </SelectItem>
             ))}
@@ -76,7 +76,7 @@ export const Step1BusinessInfo = ({ form }: StepProps) => {
           max={100}
           {...register("yearsInBusiness", { valueAsNumber: true })}
           className={cn(
-            "h-12 bg-slate-50 border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
+            "h-12 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
             errors.yearsInBusiness && "border-red-500 focus:ring-red-500 focus:border-red-500"
           )}
         />
@@ -96,7 +96,7 @@ export const Step1BusinessInfo = ({ form }: StepProps) => {
             min={1000}
             {...register("monthlyRevenue", { valueAsNumber: true })}
             className={cn(
-              "h-12 pl-8 bg-slate-50 border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
+              "h-12 pl-8 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
               errors.monthlyRevenue && "border-red-500 focus:ring-red-500 focus:border-red-500"
             )}
           />
@@ -117,7 +117,7 @@ export const Step1BusinessInfo = ({ form }: StepProps) => {
             min={50}
             {...register("avgTransactionValue", { valueAsNumber: true })}
             className={cn(
-              "h-12 pl-8 bg-slate-50 border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
+              "h-12 pl-8 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
               errors.avgTransactionValue && "border-red-500 focus:ring-red-500 focus:border-red-500"
             )}
           />
@@ -135,7 +135,7 @@ export const Step1BusinessInfo = ({ form }: StepProps) => {
           placeholder="you@company.com"
           {...register("email")}
           className={cn(
-            "h-12 bg-slate-50 border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
+            "h-12 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
             errors.email && "border-red-500 focus:ring-red-500 focus:border-red-500"
           )}
         />

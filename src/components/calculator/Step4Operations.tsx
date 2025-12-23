@@ -47,7 +47,7 @@ export const Step4Operations = ({ form }: StepProps) => {
                 value={businessHoursStart}
                 onChange={(e) => setValue("businessHoursStart", e.target.value)}
                 className={cn(
-                  "h-12 pl-12 bg-slate-50 border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
+                  "h-12 pl-12 bg-slate-50 border-slate-200 text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
                   errors.businessHoursStart && "border-red-500"
                 )}
               />
@@ -64,7 +64,7 @@ export const Step4Operations = ({ form }: StepProps) => {
                 value={businessHoursEnd}
                 onChange={(e) => setValue("businessHoursEnd", e.target.value)}
                 className={cn(
-                  "h-12 pl-12 bg-slate-50 border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
+                  "h-12 pl-12 bg-slate-50 border-slate-200 text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
                   errors.businessHoursEnd && "border-red-500"
                 )}
               />
@@ -176,7 +176,7 @@ export const Step4Operations = ({ form }: StepProps) => {
         <Select value={missedCallRate} onValueChange={(value) => setValue("missedCallRate", value)}>
           <SelectTrigger
             className={cn(
-              "h-12 bg-slate-50 border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
+              "h-12 bg-slate-50 border-slate-200 text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
               errors.missedCallRate && "border-red-500"
             )}
           >
@@ -184,7 +184,7 @@ export const Step4Operations = ({ form }: StepProps) => {
           </SelectTrigger>
           <SelectContent className="bg-white border-slate-200 shadow-lg z-50">
             {MISSED_CALL_RATES.map((rate) => (
-              <SelectItem key={rate.value} value={rate.value} className="hover:bg-slate-100">
+              <SelectItem key={rate.value} value={rate.value} className="text-slate-900 hover:bg-slate-100">
                 {rate.label}
               </SelectItem>
             ))}
@@ -213,7 +213,7 @@ export const Step4Operations = ({ form }: StepProps) => {
             max={30}
             {...register("avgHoldTime", { valueAsNumber: true })}
             className={cn(
-              "h-12 bg-slate-50 border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 pr-20",
+              "h-12 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 pr-20",
               errors.avgHoldTime && "border-red-500"
             )}
           />

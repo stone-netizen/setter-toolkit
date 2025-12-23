@@ -35,7 +35,7 @@ export const Step2LeadVolume = ({ form }: StepProps) => {
             min={1}
             {...register("totalMonthlyLeads", { valueAsNumber: true })}
             className={cn(
-              "h-12 pl-12 bg-slate-50 border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
+              "h-12 pl-12 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
               errors.totalMonthlyLeads && "border-red-500 focus:ring-red-500 focus:border-red-500"
             )}
           />
@@ -60,7 +60,7 @@ export const Step2LeadVolume = ({ form }: StepProps) => {
                 min={0}
                 {...register("inboundCalls", { valueAsNumber: true })}
                 className={cn(
-                  "h-12 pl-12 bg-white border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
+                  "h-12 pl-12 bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
                   errors.inboundCalls && "border-red-500 focus:ring-red-500 focus:border-red-500"
                 )}
               />
@@ -81,7 +81,7 @@ export const Step2LeadVolume = ({ form }: StepProps) => {
                 min={0}
                 {...register("webFormSubmissions", { valueAsNumber: true })}
                 className={cn(
-                  "h-12 pl-12 bg-white border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
+                  "h-12 pl-12 bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
                   errors.webFormSubmissions && "border-red-500 focus:ring-red-500 focus:border-red-500"
                 )}
               />
@@ -102,7 +102,7 @@ export const Step2LeadVolume = ({ form }: StepProps) => {
                 min={0}
                 {...register("socialInquiries", { valueAsNumber: true })}
                 className={cn(
-                  "h-12 pl-12 bg-white border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
+                  "h-12 pl-12 bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
                   errors.socialInquiries && "border-red-500 focus:ring-red-500 focus:border-red-500"
                 )}
               />

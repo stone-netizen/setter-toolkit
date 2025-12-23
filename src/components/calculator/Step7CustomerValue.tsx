@@ -88,7 +88,7 @@ export const Step7CustomerValue = ({ form }: StepProps) => {
                 max={50}
                 {...register("avgPurchasesPerCustomer", { valueAsNumber: true })}
                 className={cn(
-                  "h-12 bg-slate-50 border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
+                  "h-12 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
                   errors.avgPurchasesPerCustomer && "border-red-500"
                 )}
               />
