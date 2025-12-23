@@ -92,7 +92,21 @@ export const calculatorFormSchema = z.object({
   usesCRM: z.boolean().nullable().optional(),
   crmName: z.string().optional(),
 
-  // Step 7: Customer Value
+  // Step 7: Dormant Leads & Reactivation
+  hasDormantLeads: z.boolean().nullable(),
+  totalDormantLeads: z.coerce.number().min(1).optional(),
+  databaseAge: z.string().optional(),
+  everRecontactedDormant: z.boolean().nullable().optional(),
+  percentageRecontactedDormant: z.coerce.number().min(0).max(100).optional(),
+  dormantResponseCount: z.coerce.number().min(0).optional(),
+  hasPastCustomers: z.boolean().nullable(),
+  numPastCustomers: z.coerce.number().min(1).optional(),
+  avgTimeSinceLastPurchase: z.string().optional(),
+  sendsReengagementCampaigns: z.boolean().nullable().optional(),
+  reengagementFrequency: z.string().optional(),
+  reengagementResponseRate: z.coerce.number().min(0).max(100).optional(),
+
+  // Step 8: Customer Value
   repeatCustomers: z.boolean().nullable(),
   avgPurchasesPerCustomer: z.coerce.number().min(1).max(50).optional(),
 });
@@ -146,12 +160,25 @@ const defaultValues: CalculatorFormData = {
   percentageUnqualified: 20,
   usesCRM: null,
   crmName: "",
-  // Step 7
+  // Step 7: Reactivation
+  hasDormantLeads: null,
+  totalDormantLeads: 0,
+  databaseAge: "",
+  everRecontactedDormant: null,
+  percentageRecontactedDormant: 0,
+  dormantResponseCount: 0,
+  hasPastCustomers: null,
+  numPastCustomers: 0,
+  avgTimeSinceLastPurchase: "",
+  sendsReengagementCampaigns: null,
+  reengagementFrequency: "",
+  reengagementResponseRate: 0,
+  // Step 8
   repeatCustomers: null,
   avgPurchasesPerCustomer: 1,
 };
 
-export const TOTAL_STEPS = 7;
+export const TOTAL_STEPS = 8;
 
 export const useCalculatorForm = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -245,7 +272,40 @@ export const useCalculatorForm = () => {
           values.avgHourlyLaborCost >= 10 &&
           values.qualifiesLeads !== null
         );
-      case 7:
+      case 7: {
+        // At least ONE of hasDormantLeads OR hasPastCustomers must be answered
+        if (values.hasDormantLeads === null && values.hasPastCustomers === null) return false;
+        
+        // If hasDormantLeads is true, need more fields
+        if (values.hasDormantLeads === true) {
+          if (!values.totalDormantLeads || values.totalDormantLeads < 1) return false;
+          if (!values.databaseAge) return false;
+          if (values.everRecontactedDormant === null || values.everRecontactedDormant === undefined) return false;
+          
+          // If they have recontacted, need more fields
+          if (values.everRecontactedDormant === true) {
+            if (values.percentageRecontactedDormant === undefined) return false;
+            if (values.dormantResponseCount === undefined) return false;
+          }
+        }
+        
+        // If hasPastCustomers is true, need more fields
+        if (values.hasPastCustomers === true) {
+          if (!values.numPastCustomers || values.numPastCustomers < 1) return false;
+          if (!values.avgTimeSinceLastPurchase) return false;
+          if (values.sendsReengagementCampaigns === null || values.sendsReengagementCampaigns === undefined) return false;
+          
+          // If they send reengagement campaigns, need more fields
+          if (values.sendsReengagementCampaigns === true) {
+            if (!values.reengagementFrequency) return false;
+            if (values.reengagementResponseRate === undefined) return false;
+          }
+        }
+        
+        // At least one must be Yes, or both can be No (with warning shown)
+        return values.hasDormantLeads !== null || values.hasPastCustomers !== null;
+      }
+      case 8:
         return values.repeatCustomers !== null;
       default:
         return false;

@@ -10,7 +10,7 @@ interface StepProps {
   form: UseFormReturn<CalculatorFormData>;
 }
 
-export const Step7CustomerValue = ({ form }: StepProps) => {
+export const Step8CustomerValue = ({ form }: StepProps) => {
   const { register, formState: { errors }, watch, setValue } = form;
   
   const repeatCustomers = watch("repeatCustomers");
