@@ -10,7 +10,37 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { TrendingUp, Clock, CheckCircle2, XCircle } from "lucide-react";
+import { TrendingUp, Clock, CheckCircle2, XCircle, RefreshCw, Timer } from "lucide-react";
+
+const FOLLOW_UP_ATTEMPTS = [
+  { value: "0", label: "0 - No follow-ups" },
+  { value: "1", label: "1 attempt" },
+  { value: "2", label: "2 attempts" },
+  { value: "3", label: "3 attempts" },
+  { value: "4", label: "4 attempts" },
+  { value: "5", label: "5 attempts" },
+  { value: "6", label: "6 attempts" },
+  { value: "7", label: "7 attempts" },
+  { value: "8", label: "8 attempts (recommended)" },
+  { value: "10", label: "10+ attempts" },
+  { value: "15", label: "15+ attempts" },
+  { value: "20", label: "20+ attempts" },
+] as const;
+
+const CONSULTATION_LENGTHS = [
+  { value: "5", label: "5 minutes" },
+  { value: "10", label: "10 minutes" },
+  { value: "15", label: "15 minutes" },
+  { value: "20", label: "20 minutes" },
+  { value: "30", label: "30 minutes" },
+  { value: "45", label: "45 minutes" },
+  { value: "60", label: "1 hour" },
+  { value: "90", label: "1.5 hours" },
+  { value: "120", label: "2 hours" },
+  { value: "180", label: "3 hours" },
+  { value: "240", label: "4 hours" },
+  { value: "300", label: "5 hours" },
+] as const;
 
 interface StepProps {
   form: UseFormReturn<CalculatorFormData>;
@@ -23,21 +53,20 @@ export const Step3SalesProcess = ({ form }: StepProps) => {
   const closedDealsPerMonth = watch("closedDealsPerMonth") || 0;
   const avgResponseTime = watch("avgResponseTime");
   const followUpAllLeads = watch("followUpAllLeads");
-  const avgFollowUpAttempts = watch("avgFollowUpAttempts") || 0;
-  const consultationLength = watch("consultationLength") || 0;
+  const avgFollowUpAttempts = watch("avgFollowUpAttempts");
+  const consultationLength = watch("consultationLength");
   
-  const dealsExceedLeads = closedDealsPerMonth > totalMonthlyLeads && totalMonthlyLeads > 0;
   const closeRateRaw = totalMonthlyLeads > 0 
     ? (closedDealsPerMonth / totalMonthlyLeads) * 100
     : 0;
-  const closeRate = Math.min(closeRateRaw, 100).toFixed(1);
+  const closeRate = closeRateRaw.toFixed(1);
 
   return (
     <div className="space-y-6">
       <FormField
         label="Closed Deals Per Month"
         required
-        error={dealsExceedLeads ? `Cannot exceed ${totalMonthlyLeads} leads` : errors.closedDealsPerMonth?.message}
+        error={errors.closedDealsPerMonth?.message}
         helpText="How many leads become customers?"
       >
         <div className="relative">
@@ -46,11 +75,10 @@ export const Step3SalesProcess = ({ form }: StepProps) => {
             type="number"
             placeholder="12"
             min={0}
-            max={totalMonthlyLeads}
             {...register("closedDealsPerMonth", { valueAsNumber: true })}
             className={cn(
               "h-12 pl-12 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
-              (errors.closedDealsPerMonth || dealsExceedLeads) && "border-red-500 focus:ring-red-500 focus:border-red-500"
+              errors.closedDealsPerMonth && "border-red-500 focus:ring-red-500 focus:border-red-500"
             )}
           />
         </div>
@@ -208,42 +236,59 @@ export const Step3SalesProcess = ({ form }: StepProps) => {
       <FormField
         label="Average Follow-up Attempts"
         required
-        error={avgFollowUpAttempts > 20 ? "Maximum 20 attempts" : errors.avgFollowUpAttempts?.message}
+        error={errors.avgFollowUpAttempts?.message}
         helpText="Top performers do 6-8 attempts"
       >
-        <Input
-          type="number"
-          placeholder="3"
-          min={0}
-          max={20}
-          {...register("avgFollowUpAttempts", { valueAsNumber: true })}
-          className={cn(
-            "h-12 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
-            (errors.avgFollowUpAttempts || avgFollowUpAttempts > 20) && "border-red-500 focus:ring-red-500 focus:border-red-500"
-          )}
-        />
+        <Select 
+          value={avgFollowUpAttempts?.toString()} 
+          onValueChange={(value) => setValue("avgFollowUpAttempts", parseInt(value))}
+        >
+          <SelectTrigger
+            className={cn(
+              "h-12 bg-slate-50 border-slate-200 text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
+              errors.avgFollowUpAttempts && "border-red-500 focus:ring-red-500 focus:border-red-500"
+            )}
+          >
+            <RefreshCw className="w-5 h-5 text-slate-400 mr-2" />
+            <SelectValue placeholder="Select follow-up attempts" />
+          </SelectTrigger>
+          <SelectContent className="bg-white border-slate-200 shadow-lg z-50">
+            {FOLLOW_UP_ATTEMPTS.map((item) => (
+              <SelectItem key={item.value} value={item.value} className="text-slate-900 hover:bg-slate-100">
+                {item.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </FormField>
 
       <FormField
         label="Average Consultation Length"
         required
-        error={consultationLength > 300 ? "Maximum 300 minutes" : consultationLength < 5 && consultationLength > 0 ? "Minimum 5 minutes" : errors.consultationLength?.message}
-        helpText="In minutes (5-300)"
+        error={errors.consultationLength?.message}
+        helpText="How long is a typical consultation?"
       >
-        <div className="relative">
-          <Input
-            type="number"
-            placeholder="30"
-            min={5}
-            max={300}
-            {...register("consultationLength", { valueAsNumber: true })}
+        <Select 
+          value={consultationLength?.toString()} 
+          onValueChange={(value) => setValue("consultationLength", parseInt(value))}
+        >
+          <SelectTrigger
             className={cn(
-              "h-12 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 pr-16",
-              (errors.consultationLength || consultationLength > 300 || (consultationLength < 5 && consultationLength > 0)) && "border-red-500 focus:ring-red-500 focus:border-red-500"
+              "h-12 bg-slate-50 border-slate-200 text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
+              errors.consultationLength && "border-red-500 focus:ring-red-500 focus:border-red-500"
             )}
-          />
-          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">minutes</span>
-        </div>
+          >
+            <Timer className="w-5 h-5 text-slate-400 mr-2" />
+            <SelectValue placeholder="Select consultation length" />
+          </SelectTrigger>
+          <SelectContent className="bg-white border-slate-200 shadow-lg z-50">
+            {CONSULTATION_LENGTHS.map((item) => (
+              <SelectItem key={item.value} value={item.value} className="text-slate-900 hover:bg-slate-100">
+                {item.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </FormField>
     </div>
   );

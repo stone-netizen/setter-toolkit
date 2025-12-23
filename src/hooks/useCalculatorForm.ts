@@ -219,7 +219,6 @@ export const useCalculatorForm = () => {
       case 3:
         return (
           values.closedDealsPerMonth >= 0 &&
-          values.closedDealsPerMonth <= values.totalMonthlyLeads &&
           values.avgResponseTime.length > 0 &&
           values.avgFollowUpAttempts >= 0 &&
           values.avgFollowUpAttempts <= 20 &&
