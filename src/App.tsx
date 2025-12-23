@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Landing from "./pages/Landing";
 import Calculator from "./pages/Calculator";
+import Results from "./pages/Results";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Leads from "./pages/Leads";
@@ -27,6 +28,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/calculator" element={<Calculator />} />
+            <Route path="/results" element={<Results />} />
             <Route path="/auth" element={<Auth />} />
             <Route
               path="/dashboard"
