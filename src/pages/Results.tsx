@@ -15,12 +15,13 @@ import {
   Zap,
   Calendar,
   Edit3,
-  X,
   Linkedin,
   Twitter,
   Mail,
   Link2,
   Check,
+  LayoutDashboard,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -48,6 +49,9 @@ import {
 } from "@/utils/calculations";
 import { CalculatorFormData } from "@/hooks/useCalculatorForm";
 import { toast } from "sonner";
+import { ReactivationHeroCard } from "@/components/results/ReactivationHeroCard";
+import { ReactivationBreakdown } from "@/components/results/ReactivationBreakdown";
+import { ReactivationROICalculator } from "@/components/results/ReactivationROICalculator";
 
 const RESULTS_STORAGE_KEY = "leakDetectorResults";
 
@@ -73,6 +77,7 @@ const LEAK_ICONS: Record<string, React.ReactNode> = {
   unqualifiedLeads: <Target className="h-5 w-5" />,
   afterHours: <Clock className="h-5 w-5" />,
   holdTime: <Phone className="h-5 w-5" />,
+  reactivation: <Sparkles className="h-5 w-5" />,
 };
 
 const LEAK_PROBLEMS: Record<string, string[]> = {
@@ -283,17 +288,40 @@ export default function Results() {
             </div>
             <span className="text-sm font-medium text-white">LeakDetector</span>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleEditInputs}
-            className="border-slate-600 text-slate-300 hover:bg-slate-800"
-          >
-            <Edit3 className="h-4 w-4 mr-2" />
-            Edit Inputs
-          </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/leak-dashboard")}
+              className="border-amber-500/50 text-amber-400 hover:bg-amber-500/10 mr-2"
+            >
+              <LayoutDashboard className="h-4 w-4 mr-2" />
+              Dashboard
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleEditInputs}
+              className="border-slate-600 text-slate-300 hover:bg-slate-800"
+            >
+              <Edit3 className="h-4 w-4 mr-2" />
+              Edit Inputs
+            </Button>
         </div>
       </header>
+
+      {/* Reactivation Hero Card */}
+      {results.reactivationOpportunity && (
+        <motion.section
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="pt-24 pb-4 px-4"
+        >
+          <div className="max-w-4xl mx-auto">
+            <ReactivationHeroCard reactivation={results.reactivationOpportunity} />
+          </div>
+        </motion.section>
+      )}
 
       {/* Hero Section */}
       <motion.section
