@@ -75,6 +75,18 @@ export function useCreateLead() {
       category?: string;
       address?: string;
       phone?: string;
+      maps_url?: string;
+      avg_ticket_value?: number;
+      leads_per_month?: number;
+      historical_leads_count?: number;
+      response_time?: string;
+      crm_name?: string;
+      crm_active?: boolean;
+      follow_up_attempts?: number;
+      missed_calls_percentage?: number;
+      review_response_active?: boolean;
+      email_marketing_active?: boolean;
+      has_chat_widget?: boolean;
     }) => {
       if (!user) throw new Error("Not authenticated");
 
@@ -88,6 +100,18 @@ export function useCreateLead() {
           category: lead.category || null,
           address: lead.address || null,
           phone: lead.phone || null,
+          maps_url: lead.maps_url || null,
+          avg_ticket_value: lead.avg_ticket_value ?? 5000,
+          leads_per_month: lead.leads_per_month ?? 20,
+          historical_leads_count: lead.historical_leads_count ?? 0,
+          response_time: lead.response_time ?? "1-4 hrs",
+          crm_name: lead.crm_name || null,
+          crm_active: lead.crm_active ?? false,
+          follow_up_attempts: lead.follow_up_attempts ?? 2,
+          missed_calls_percentage: lead.missed_calls_percentage ?? 20,
+          review_response_active: lead.review_response_active ?? false,
+          email_marketing_active: lead.email_marketing_active ?? false,
+          has_chat_widget: lead.has_chat_widget ?? false,
         })
         .select()
         .single();

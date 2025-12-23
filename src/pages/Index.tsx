@@ -3,7 +3,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { LeakSimulator } from "@/components/dashboard/LeakSimulator";
 import { LeadTable } from "@/components/leads/LeadTable";
-import { AddLeadDialog } from "@/components/leads/AddLeadDialog";
+import { AuditWizard } from "@/components/audit/AuditWizard";
 import { useLeads, useDeleteLead, useLeadStats } from "@/hooks/useLeads";
 import { useSettings, useUpdateSettings } from "@/hooks/useSettings";
 import {
@@ -48,7 +48,7 @@ export default function Index() {
             <h1 className="text-2xl font-bold text-foreground">Command Center</h1>
             <p className="text-muted-foreground">Monitor revenue leaks across your leads</p>
           </div>
-          <AddLeadDialog />
+          <AuditWizard />
         </motion.div>
 
         {/* KPI Cards */}

@@ -76,12 +76,24 @@ export type Database = {
       leads: {
         Row: {
           address: string | null
+          avg_ticket_value: number | null
           business_name: string
           category: string | null
           created_at: string
+          crm_active: boolean | null
+          crm_name: string | null
+          email_marketing_active: boolean | null
+          follow_up_attempts: number | null
+          has_chat_widget: boolean | null
+          historical_leads_count: number | null
           id: string
           industry: string | null
+          leads_per_month: number | null
+          maps_url: string | null
+          missed_calls_percentage: number | null
           phone: string | null
+          response_time: string | null
+          review_response_active: boolean | null
           status: string
           updated_at: string
           user_id: string
@@ -89,12 +101,24 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          avg_ticket_value?: number | null
           business_name: string
           category?: string | null
           created_at?: string
+          crm_active?: boolean | null
+          crm_name?: string | null
+          email_marketing_active?: boolean | null
+          follow_up_attempts?: number | null
+          has_chat_widget?: boolean | null
+          historical_leads_count?: number | null
           id?: string
           industry?: string | null
+          leads_per_month?: number | null
+          maps_url?: string | null
+          missed_calls_percentage?: number | null
           phone?: string | null
+          response_time?: string | null
+          review_response_active?: boolean | null
           status?: string
           updated_at?: string
           user_id: string
@@ -102,12 +126,24 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          avg_ticket_value?: number | null
           business_name?: string
           category?: string | null
           created_at?: string
+          crm_active?: boolean | null
+          crm_name?: string | null
+          email_marketing_active?: boolean | null
+          follow_up_attempts?: number | null
+          has_chat_widget?: boolean | null
+          historical_leads_count?: number | null
           id?: string
           industry?: string | null
+          leads_per_month?: number | null
+          maps_url?: string | null
+          missed_calls_percentage?: number | null
           phone?: string | null
+          response_time?: string | null
+          review_response_active?: boolean | null
           status?: string
           updated_at?: string
           user_id?: string
