@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { FormField } from "./FormField";
 import { CalculatorFormData } from "@/hooks/useCalculatorForm";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, XCircle, Database, Users, AlertTriangle, Sparkles } from "lucide-react";
+import { CheckCircle2, XCircle, Database, Users, AlertTriangle, Sparkles, Repeat, DollarSign } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Select,
@@ -47,8 +47,21 @@ export const Step7Reactivation = ({ form }: StepProps) => {
   const everRecontactedDormant = watch("everRecontactedDormant");
   const hasPastCustomers = watch("hasPastCustomers");
   const sendsReengagementCampaigns = watch("sendsReengagementCampaigns");
+  const repeatCustomers = watch("repeatCustomers");
+  const avgPurchasesPerCustomer = watch("avgPurchasesPerCustomer") || 1;
+  const avgTransactionValue = watch("avgTransactionValue") || 0;
   
+  const ltv = avgPurchasesPerCustomer * avgTransactionValue;
   const bothNo = hasDormantLeads === false && hasPastCustomers === false;
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value);
+  };
 
   return (
     <div className="space-y-8">
@@ -470,7 +483,7 @@ export const Step7Reactivation = ({ form }: StepProps) => {
             <div className="flex items-start gap-3 p-4 bg-yellow-50 rounded-xl border border-yellow-300">
               <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-sm font-semibold text-yellow-800">⚠️ Building a lead database is crucial for long-term growth</p>
+                <p className="text-sm font-semibold text-yellow-800">Building a lead database is crucial for long-term growth</p>
                 <p className="text-sm text-yellow-700 mt-1">
                   Consider starting this now — even simple spreadsheets of past inquiries can become valuable assets.
                 </p>
@@ -479,6 +492,111 @@ export const Step7Reactivation = ({ form }: StepProps) => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* SECTION C: Customer Value (merged from Step 8) */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-2 pb-2 border-b border-emerald-200">
+          <DollarSign className="w-5 h-5 text-emerald-500" />
+          <h3 className="font-semibold text-slate-900">Customer Value</h3>
+        </div>
+
+        <FormField
+          label="Do customers typically make repeat purchases?"
+          required
+          error={errors.repeatCustomers?.message}
+          helpText="Multiple visits, ongoing services, subscriptions, etc."
+        >
+          <div className="grid grid-cols-2 gap-4">
+            <button
+              type="button"
+              onClick={() => setValue("repeatCustomers", true)}
+              className={cn(
+                "flex flex-col items-center gap-3 p-5 rounded-xl border-2 transition-all duration-200",
+                repeatCustomers === true
+                  ? "border-emerald-500 bg-emerald-50"
+                  : "border-slate-200 hover:border-slate-300 bg-white"
+              )}
+            >
+              <Repeat className={cn("w-7 h-7", repeatCustomers === true ? "text-emerald-500" : "text-slate-300")} />
+              <span className={cn("font-medium", repeatCustomers === true ? "text-emerald-700" : "text-slate-600")}>Yes</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setValue("repeatCustomers", false)}
+              className={cn(
+                "flex flex-col items-center gap-3 p-5 rounded-xl border-2 transition-all duration-200",
+                repeatCustomers === false
+                  ? "border-emerald-500 bg-emerald-50"
+                  : "border-slate-200 hover:border-slate-300 bg-white"
+              )}
+            >
+              <XCircle className={cn("w-7 h-7", repeatCustomers === false ? "text-emerald-500" : "text-slate-300")} />
+              <span className={cn("font-medium", repeatCustomers === false ? "text-emerald-700" : "text-slate-600")}>No</span>
+            </button>
+          </div>
+        </FormField>
+
+        <AnimatePresence mode="wait">
+          {repeatCustomers === true && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+              className="space-y-6 overflow-hidden"
+            >
+              <FormField
+                label="Average Purchases Per Customer (Lifetime)"
+                required
+                error={errors.avgPurchasesPerCustomer?.message}
+                helpText="How many times does a typical customer buy from you?"
+              >
+                <Input
+                  type="number"
+                  placeholder="3"
+                  min={1}
+                  max={50}
+                  {...register("avgPurchasesPerCustomer", { valueAsNumber: true })}
+                  className={cn(
+                    "h-12 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
+                    errors.avgPurchasesPerCustomer && "border-red-500"
+                  )}
+                />
+              </FormField>
+
+              {/* LTV Display */}
+              {avgTransactionValue > 0 && (
+                <div className="p-4 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl border border-emerald-200">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center">
+                      <DollarSign className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-emerald-700">Customer Lifetime Value</p>
+                      <p className="text-xl font-bold text-emerald-900">{formatCurrency(ltv)}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Ready to Calculate */}
+      <div className="pt-4 border-t border-slate-200">
+        <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center">
+              <CheckCircle2 className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className="font-medium text-emerald-800">Almost done!</p>
+              <p className="text-sm text-emerald-600">Click below to calculate your revenue leaks.</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

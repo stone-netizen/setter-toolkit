@@ -15,7 +15,6 @@ import { Step4Operations } from "@/components/calculator/Step4Operations";
 import { Step5Appointments } from "@/components/calculator/Step5Appointments";
 import { Step6TeamEfficiency } from "@/components/calculator/Step6TeamEfficiency";
 import { Step7Reactivation } from "@/components/calculator/Step7Reactivation";
-import { Step8CustomerValue } from "@/components/calculator/Step8CustomerValue";
 
 const RESULTS_STORAGE_KEY = "leakDetectorResults";
 
@@ -38,8 +37,7 @@ const Calculator = () => {
     "Operations",
     "Appointments",
     "Team Efficiency",
-    "💤 Dormant Leads & Reactivation",
-    "Customer Value",
+    "Reactivation & Customer Value",
   ];
 
   const handleBack = () => {
@@ -97,8 +95,6 @@ const Calculator = () => {
         return <Step6TeamEfficiency form={form} />;
       case 7:
         return <Step7Reactivation form={form} />;
-      case 8:
-        return <Step8CustomerValue form={form} />;
       default:
         return null;
     }

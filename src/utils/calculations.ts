@@ -95,11 +95,21 @@ const MISSED_CALL_RATES: Record<string, number> = {
   "unknown": 0.45, // Industry average
 };
 
-// Helper function to get LTV
+// Helper function to get LTV (for LOST LEADS - new business never closed)
 function getLTV(data: CalculatorFormData): number {
   const avgTransaction = data.avgTransactionValue || 0;
   const repeatPurchases = data.repeatCustomers ? (data.avgPurchasesPerCustomer || 1) : 1;
   return avgTransaction * repeatPurchases;
+}
+
+// Helper function to get single transaction value (for LOST BOOKINGS/TRANSACTIONS)
+function getTransactionValue(data: CalculatorFormData): number {
+  return data.avgTransactionValue || 0;
+}
+
+// Helper function to get monthly revenue for sanity capping
+function getMonthlyRevenue(data: CalculatorFormData): number {
+  return data.monthlyRevenue || 1;
 }
 
 // Helper function to get close rate
@@ -117,17 +127,26 @@ function getSeverity(monthlyLoss: number): "critical" | "high" | "medium" | "low
   return "low";
 }
 
-// 1. Missed Calls Leak
+// Helper to cap individual leak at a percentage of monthly revenue
+function capLoss(loss: number, monthlyRevenue: number, maxPercent: number = 0.25): number {
+  const cap = monthlyRevenue * maxPercent;
+  return Math.min(loss, cap);
+}
+
+// 1. Missed Calls Leak - Uses LTV (lost leads, not lost transactions)
 export function calculateMissedCallsLeak(data: CalculatorFormData): Leak {
   const missedCallRateKey = data.missedCallRate || "unknown";
   const missedCallRate = MISSED_CALL_RATES[missedCallRateKey] || 0.45;
   const inboundCalls = data.inboundCalls || 0;
   const closeRate = getCloseRate(data);
   const ltv = getLTV(data);
+  const monthlyRevenue = getMonthlyRevenue(data);
 
   const missedCalls = Math.round(inboundCalls * missedCallRate);
   const lostDeals = missedCalls * closeRate;
-  const monthlyLoss = Math.round(lostDeals * ltv);
+  const rawLoss = Math.round(lostDeals * ltv);
+  // Cap at 20% of monthly revenue
+  const monthlyLoss = capLoss(rawLoss, monthlyRevenue, 0.20);
   const annualLoss = monthlyLoss * 12;
 
   return {
@@ -149,20 +168,23 @@ export function calculateMissedCallsLeak(data: CalculatorFormData): Leak {
   };
 }
 
-// 2. Slow Response Leak
+// 2. Slow Response Leak - Uses LTV (lost leads)
 export function calculateSlowResponseLeak(data: CalculatorFormData): Leak {
   const responseTime = data.avgResponseTime || "dont-track";
   const responseMultiplier = RESPONSE_TIME_MULTIPLIERS[responseTime] || 0.50;
   const totalLeads = data.totalMonthlyLeads || 0;
   const actualCloseRate = getCloseRate(data);
   const ltv = getLTV(data);
+  const monthlyRevenue = getMonthlyRevenue(data);
 
   // Ideal close rate assumes <5min response (industry shows 391% higher contact rate)
   const idealCloseRate = Math.min(actualCloseRate / responseMultiplier, 0.40);
   const closeRateGap = Math.max(0, idealCloseRate - actualCloseRate);
   
   const lostDeals = totalLeads * closeRateGap;
-  const monthlyLoss = Math.round(lostDeals * ltv);
+  const rawLoss = Math.round(lostDeals * ltv);
+  // Cap at 20% of monthly revenue
+  const monthlyLoss = capLoss(rawLoss, monthlyRevenue, 0.20);
   const annualLoss = monthlyLoss * 12;
 
   const responseTimeLabels: Record<string, string> = {
@@ -194,7 +216,7 @@ export function calculateSlowResponseLeak(data: CalculatorFormData): Leak {
   };
 }
 
-// 3. No Follow-Up Leak
+// 3. No Follow-Up Leak - Uses LTV (lost leads)
 export function calculateNoFollowUpLeak(data: CalculatorFormData): Leak {
   const totalLeads = data.totalMonthlyLeads || 0;
   const followsAll = data.followUpAllLeads;
@@ -202,6 +224,7 @@ export function calculateNoFollowUpLeak(data: CalculatorFormData): Leak {
   const avgAttempts = data.avgFollowUpAttempts || 0;
   const closeRate = getCloseRate(data);
   const ltv = getLTV(data);
+  const monthlyRevenue = getMonthlyRevenue(data);
 
   // Calculate leads not followed up
   const followUpRate = followsAll ? 1.0 : percentageFollowedUp / 100;
@@ -220,7 +243,9 @@ export function calculateNoFollowUpLeak(data: CalculatorFormData): Leak {
   const lostFromNoFollowUp = leadsNotFollowedUp * closeRate * 0.5;
 
   const totalLostDeals = lostFromNoFollowUp + lostFromInsufficientAttempts;
-  const monthlyLoss = Math.round(totalLostDeals * ltv);
+  const rawLoss = Math.round(totalLostDeals * ltv);
+  // Cap at 20% of monthly revenue
+  const monthlyLoss = capLoss(rawLoss, monthlyRevenue, 0.20);
   const annualLoss = monthlyLoss * 12;
 
   return {
@@ -246,7 +271,7 @@ export function calculateNoFollowUpLeak(data: CalculatorFormData): Leak {
   };
 }
 
-// 4. No-Show Leak
+// 4. No-Show Leak - Uses TRANSACTION VALUE (lost bookings, not lost leads)
 export function calculateNoShowLeak(data: CalculatorFormData): Leak {
   const requiresAppointments = data.requiresAppointments;
   
@@ -269,7 +294,9 @@ export function calculateNoShowLeak(data: CalculatorFormData): Leak {
   const appointmentsBooked = data.appointmentsBooked || 0;
   const appointmentsShowUp = data.appointmentsShowUp || 0;
   const sendsReminders = data.sendsReminders;
-  const ltv = getLTV(data);
+  // Use single transaction value for no-shows (they already booked, it's a lost transaction)
+  const transactionValue = getTransactionValue(data);
+  const monthlyRevenue = getMonthlyRevenue(data);
 
   const noShows = Math.max(0, appointmentsBooked - appointmentsShowUp);
   const noShowRate = appointmentsBooked > 0 ? noShows / appointmentsBooked : 0;
@@ -278,7 +305,10 @@ export function calculateNoShowLeak(data: CalculatorFormData): Leak {
   const preventabilityRate = sendsReminders ? 0.30 : 0.70;
   const preventableNoShows = noShows * preventabilityRate;
 
-  const monthlyLoss = Math.round(preventableNoShows * ltv);
+  // Use transaction value, not LTV, for lost appointments
+  const rawLoss = Math.round(preventableNoShows * transactionValue);
+  // Cap at 15% of monthly revenue
+  const monthlyLoss = capLoss(rawLoss, monthlyRevenue, 0.15);
   const annualLoss = monthlyLoss * 12;
 
   return {
@@ -361,13 +391,14 @@ export function calculateUnqualifiedLeadLeak(data: CalculatorFormData): Leak {
   };
 }
 
-// 6. After-Hours Leak
+// 6. After-Hours Leak - Uses LTV (lost leads/inquiries)
 export function calculateAfterHoursLeak(data: CalculatorFormData): Leak {
   const inboundCalls = data.inboundCalls || 0;
   const answersAfterHours = data.answersAfterHours;
   const answersWeekends = data.answersWeekends;
   const closeRate = getCloseRate(data);
   const ltv = getLTV(data);
+  const monthlyRevenue = getMonthlyRevenue(data);
 
   // Industry averages: 30% of calls come after hours, 25% on weekends
   const afterHoursRate = 0.30;
@@ -388,7 +419,9 @@ export function calculateAfterHoursLeak(data: CalculatorFormData): Leak {
 
   const totalMissed = missedAfterHours + missedWeekends;
   const lostDeals = totalMissed * closeRate;
-  const monthlyLoss = Math.round(lostDeals * ltv);
+  const rawLoss = Math.round(lostDeals * ltv);
+  // Cap at 25% of monthly revenue (after-hours can be significant but not this large)
+  const monthlyLoss = capLoss(rawLoss, monthlyRevenue, 0.25);
   const annualLoss = monthlyLoss * 12;
 
   return {
@@ -416,18 +449,21 @@ export function calculateAfterHoursLeak(data: CalculatorFormData): Leak {
   };
 }
 
-// 7. Hold Time Leak
+// 7. Hold Time Leak - Uses LTV (lost leads)
 export function calculateHoldTimeLeak(data: CalculatorFormData): Leak {
   const inboundCalls = data.inboundCalls || 0;
   const avgHoldTime = data.avgHoldTime || 0;
   const closeRate = getCloseRate(data);
   const ltv = getLTV(data);
+  const monthlyRevenue = getMonthlyRevenue(data);
 
   // Every minute of hold time = ~10% hang-up rate (capped at 90%)
   const hangUpRate = Math.min(avgHoldTime * 0.10, 0.90);
   const callsAbandoned = inboundCalls * hangUpRate;
   const lostDeals = callsAbandoned * closeRate;
-  const monthlyLoss = Math.round(lostDeals * ltv);
+  const rawLoss = Math.round(lostDeals * ltv);
+  // Cap at 15% of monthly revenue
+  const monthlyLoss = capLoss(rawLoss, monthlyRevenue, 0.15);
   const annualLoss = monthlyLoss * 12;
 
   return {
@@ -689,20 +725,36 @@ export function calculateAllLeaks(formData: CalculatorFormData): CalculationResu
   }
 
   // Combine all leaks with reactivation first
-  const allLeaks: Leak[] = reactivationAsLeak
+  let allLeaks: Leak[] = reactivationAsLeak
     ? [reactivationAsLeak, ...operationalLeaks]
     : operationalLeaks;
 
-  // Calculate totals (including reactivation)
-  const totalMonthlyLoss = allLeaks.reduce((sum, leak) => sum + leak.monthlyLoss, 0);
+  // Calculate raw totals
+  let totalMonthlyLoss = allLeaks.reduce((sum, leak) => sum + leak.monthlyLoss, 0);
+  
+  // TOTAL LOSS CAP: Never exceed 80% of monthly revenue
+  const monthlyRevenue = formData.monthlyRevenue || 1;
+  const maxTotalLoss = monthlyRevenue * 0.80;
+  
+  if (totalMonthlyLoss > maxTotalLoss) {
+    // Proportionally reduce each leak
+    const reductionFactor = maxTotalLoss / totalMonthlyLoss;
+    allLeaks = allLeaks.map(leak => ({
+      ...leak,
+      monthlyLoss: Math.round(leak.monthlyLoss * reductionFactor),
+      annualLoss: Math.round(leak.monthlyLoss * reductionFactor * 12),
+    }));
+    totalMonthlyLoss = maxTotalLoss;
+  }
+  
   const totalAnnualLoss = totalMonthlyLoss * 12;
 
   // Legacy leaks array (for backwards compatibility) - same as allLeaks
   const leaks = allLeaks;
 
   return {
-    totalMonthlyLoss,
-    totalAnnualLoss,
+    totalMonthlyLoss: Math.round(totalMonthlyLoss),
+    totalAnnualLoss: Math.round(totalAnnualLoss),
     leaks,
     reactivationOpportunity,
     operationalLeaks,
