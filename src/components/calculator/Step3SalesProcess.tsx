@@ -23,17 +23,21 @@ export const Step3SalesProcess = ({ form }: StepProps) => {
   const closedDealsPerMonth = watch("closedDealsPerMonth") || 0;
   const avgResponseTime = watch("avgResponseTime");
   const followUpAllLeads = watch("followUpAllLeads");
+  const avgFollowUpAttempts = watch("avgFollowUpAttempts") || 0;
+  const consultationLength = watch("consultationLength") || 0;
   
-  const closeRate = totalMonthlyLeads > 0 
-    ? ((closedDealsPerMonth / totalMonthlyLeads) * 100).toFixed(1) 
-    : "0.0";
+  const dealsExceedLeads = closedDealsPerMonth > totalMonthlyLeads && totalMonthlyLeads > 0;
+  const closeRateRaw = totalMonthlyLeads > 0 
+    ? (closedDealsPerMonth / totalMonthlyLeads) * 100
+    : 0;
+  const closeRate = Math.min(closeRateRaw, 100).toFixed(1);
 
   return (
     <div className="space-y-6">
       <FormField
         label="Closed Deals Per Month"
         required
-        error={errors.closedDealsPerMonth?.message}
+        error={dealsExceedLeads ? `Cannot exceed ${totalMonthlyLeads} leads` : errors.closedDealsPerMonth?.message}
         helpText="How many leads become customers?"
       >
         <div className="relative">
@@ -42,10 +46,11 @@ export const Step3SalesProcess = ({ form }: StepProps) => {
             type="number"
             placeholder="12"
             min={0}
+            max={totalMonthlyLeads}
             {...register("closedDealsPerMonth", { valueAsNumber: true })}
             className={cn(
               "h-12 pl-12 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
-              errors.closedDealsPerMonth && "border-red-500 focus:ring-red-500 focus:border-red-500"
+              (errors.closedDealsPerMonth || dealsExceedLeads) && "border-red-500 focus:ring-red-500 focus:border-red-500"
             )}
           />
         </div>
@@ -203,7 +208,7 @@ export const Step3SalesProcess = ({ form }: StepProps) => {
       <FormField
         label="Average Follow-up Attempts"
         required
-        error={errors.avgFollowUpAttempts?.message}
+        error={avgFollowUpAttempts > 20 ? "Maximum 20 attempts" : errors.avgFollowUpAttempts?.message}
         helpText="Top performers do 6-8 attempts"
       >
         <Input
@@ -214,7 +219,7 @@ export const Step3SalesProcess = ({ form }: StepProps) => {
           {...register("avgFollowUpAttempts", { valueAsNumber: true })}
           className={cn(
             "h-12 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
-            errors.avgFollowUpAttempts && "border-red-500 focus:ring-red-500 focus:border-red-500"
+            (errors.avgFollowUpAttempts || avgFollowUpAttempts > 20) && "border-red-500 focus:ring-red-500 focus:border-red-500"
           )}
         />
       </FormField>
@@ -222,8 +227,8 @@ export const Step3SalesProcess = ({ form }: StepProps) => {
       <FormField
         label="Average Consultation Length"
         required
-        error={errors.consultationLength?.message}
-        helpText="In minutes"
+        error={consultationLength > 300 ? "Maximum 300 minutes" : consultationLength < 5 && consultationLength > 0 ? "Minimum 5 minutes" : errors.consultationLength?.message}
+        helpText="In minutes (5-300)"
       >
         <div className="relative">
           <Input
@@ -234,7 +239,7 @@ export const Step3SalesProcess = ({ form }: StepProps) => {
             {...register("consultationLength", { valueAsNumber: true })}
             className={cn(
               "h-12 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 pr-16",
-              errors.consultationLength && "border-red-500 focus:ring-red-500 focus:border-red-500"
+              (errors.consultationLength || consultationLength > 300 || (consultationLength < 5 && consultationLength > 0)) && "border-red-500 focus:ring-red-500 focus:border-red-500"
             )}
           />
           <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">minutes</span>
