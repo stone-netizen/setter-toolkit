@@ -60,6 +60,9 @@ export const Step3SalesProcess = ({ form }: StepProps) => {
     ? (closedDealsPerMonth / totalMonthlyLeads) * 100
     : 0;
   const closeRate = closeRateRaw.toFixed(1);
+  
+  // Validation: Can't close more deals than leads
+  const hasValidationError = closedDealsPerMonth > totalMonthlyLeads && totalMonthlyLeads > 0;
 
   return (
     <div className="space-y-6">
@@ -78,52 +81,66 @@ export const Step3SalesProcess = ({ form }: StepProps) => {
             {...register("closedDealsPerMonth", { valueAsNumber: true })}
             className={cn(
               "h-12 pl-12 bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500",
-              errors.closedDealsPerMonth && "border-red-500 focus:ring-red-500 focus:border-red-500"
+              (errors.closedDealsPerMonth || hasValidationError) && "border-red-500 focus:ring-red-500 focus:border-red-500"
             )}
           />
         </div>
       </FormField>
 
-      {/* Calculated Close Rate */}
-      <div className={cn(
-        "p-4 rounded-xl border-2",
-        parseFloat(closeRate) >= 20 
-          ? "bg-emerald-50 border-emerald-200" 
-          : parseFloat(closeRate) >= 10 
-          ? "bg-amber-50 border-amber-200"
-          : "bg-red-50 border-red-200"
-      )}>
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-slate-600">Your Close Rate</p>
-            <p className="text-xs text-slate-500">Based on {totalMonthlyLeads} leads/month</p>
+      {/* Validation Error: More closes than leads */}
+      {hasValidationError && (
+        <div className="p-4 rounded-xl border-2 bg-red-50 border-red-300">
+          <p className="text-sm font-medium text-red-700">
+            ⚠️ You can't close more deals ({closedDealsPerMonth}) than total leads ({totalMonthlyLeads}).
+          </p>
+          <p className="text-xs text-red-600 mt-1">
+            Please verify your numbers. Either reduce closed deals or increase your total monthly leads.
+          </p>
+        </div>
+      )}
+
+      {/* Calculated Close Rate - only show if valid */}
+      {!hasValidationError && (
+        <div className={cn(
+          "p-4 rounded-xl border-2",
+          parseFloat(closeRate) >= 20 
+            ? "bg-emerald-50 border-emerald-200" 
+            : parseFloat(closeRate) >= 10 
+            ? "bg-amber-50 border-amber-200"
+            : "bg-red-50 border-red-200"
+        )}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-600">Your Close Rate</p>
+              <p className="text-xs text-slate-500">Based on {totalMonthlyLeads} leads/month</p>
+            </div>
+            <div className={cn(
+              "text-3xl font-bold",
+              parseFloat(closeRate) >= 20 
+                ? "text-emerald-600" 
+                : parseFloat(closeRate) >= 10 
+                ? "text-amber-600"
+                : "text-red-600"
+            )}>
+              {closeRate}%
+            </div>
           </div>
-          <div className={cn(
-            "text-3xl font-bold",
+          <p className={cn(
+            "text-xs mt-2",
             parseFloat(closeRate) >= 20 
               ? "text-emerald-600" 
               : parseFloat(closeRate) >= 10 
               ? "text-amber-600"
               : "text-red-600"
           )}>
-            {closeRate}%
-          </div>
+            {parseFloat(closeRate) >= 20 
+              ? "✅ Excellent! Above industry average." 
+              : parseFloat(closeRate) >= 10 
+              ? "📊 Average. Room for improvement."
+              : "⚠️ Below average. Significant opportunity for growth."}
+          </p>
         </div>
-        <p className={cn(
-          "text-xs mt-2",
-          parseFloat(closeRate) >= 20 
-            ? "text-emerald-600" 
-            : parseFloat(closeRate) >= 10 
-            ? "text-amber-600"
-            : "text-red-600"
-        )}>
-          {parseFloat(closeRate) >= 20 
-            ? "✅ Excellent! Above industry average." 
-            : parseFloat(closeRate) >= 10 
-            ? "📊 Average. Room for improvement."
-            : "⚠️ Below average. Significant opportunity for growth."}
-        </p>
-      </div>
+      )}
 
       <FormField
         label="Average Response Time"
