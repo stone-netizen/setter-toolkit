@@ -46,7 +46,7 @@ import {
 import { CalculatorFormData } from "@/hooks/useCalculatorForm";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { CampaignBuilder } from "@/components/dashboard/CampaignBuilder";
+import { CalendlyModal } from "@/components/CalendlyModal";
 
 const RESULTS_STORAGE_KEY = "leakDetectorResults";
 
@@ -69,7 +69,7 @@ export default function LeakDashboard() {
   const [sortColumn, setSortColumn] = useState<"rank" | "monthlyLoss" | "severity">("rank");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [filter, setFilter] = useState<"all" | "critical" | "quickwin">("all");
-  const [showCampaignBuilder, setShowCampaignBuilder] = useState(false);
+  
 
   useEffect(() => {
     const saved = localStorage.getItem(RESULTS_STORAGE_KEY);
@@ -163,6 +163,8 @@ export default function LeakDashboard() {
   // Implementation progress (mock data - would come from database in real app)
   const implementationProgress = 40;
 
+  const [isCalendlyOpen, setIsCalendlyOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-slate-900">
       {/* Header */}
@@ -171,10 +173,9 @@ export default function LeakDashboard() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <div className="w-6 h-6 rounded bg-emerald-500 flex items-center justify-center">
-                  <Zap className="w-4 h-4 text-slate-900" />
+                <div className="text-lg font-bold bg-gradient-to-r from-violet-400 to-indigo-400 text-transparent bg-clip-text">
+                  LeakDetector
                 </div>
-                <span className="text-lg font-semibold text-white">LeakDetector Dashboard</span>
               </div>
               <p className="text-slate-400 text-sm">
                 Business: <span className="text-slate-200">{formData.businessName}</span> | 
@@ -202,7 +203,7 @@ export default function LeakDashboard() {
               </Button>
               <Button
                 size="sm"
-                className="bg-emerald-500 hover:bg-emerald-600 text-white"
+                className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:shadow-lg text-white"
                 onClick={handleUpdateAnalysis}
               >
                 <RefreshCw className="w-4 h-4 mr-2" />
@@ -256,9 +257,9 @@ export default function LeakDashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <Card className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 border-amber-500/30 h-full">
+            <Card className="bg-gradient-to-br from-violet-500/10 to-indigo-500/10 border-violet-500/30 h-full">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-amber-400 flex items-center gap-2">
+                <CardTitle className="text-sm font-medium text-violet-400 flex items-center gap-2">
                   <Zap className="w-4 h-4" />
                   QUICK WIN PRIORITY
                 </CardTitle>
@@ -266,7 +267,7 @@ export default function LeakDashboard() {
               <CardContent>
                 <p className="text-xl font-bold text-white mb-2">Reactivation Campaign</p>
                 <p className="text-slate-400 text-sm mb-4">Expected Recovery:</p>
-                <p className="text-3xl font-bold text-amber-400 mb-4">
+                <p className="text-3xl font-bold text-violet-400 mb-4">
                   {formatCurrency(reactivationValue)} in 30 days
                 </p>
                 <div className="grid grid-cols-2 gap-3 mb-4">
@@ -280,11 +281,11 @@ export default function LeakDashboard() {
                   </div>
                 </div>
                 <Button
-                  className="w-full bg-amber-500 hover:bg-amber-600 text-white"
-                  onClick={() => setShowCampaignBuilder(true)}
+                  className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:shadow-lg hover:shadow-violet-500/50 text-white"
+                  onClick={() => setIsCalendlyOpen(true)}
                 >
                   <Rocket className="w-4 h-4 mr-2" />
-                  Start Campaign
+                  Book Strategy Call
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </CardContent>
@@ -337,15 +338,6 @@ export default function LeakDashboard() {
             </Card>
           </motion.div>
         </div>
-
-        {/* Campaign Builder Modal */}
-        {showCampaignBuilder && (
-          <CampaignBuilder
-            reactivation={results.reactivationOpportunity}
-            formData={formData}
-            onClose={() => setShowCampaignBuilder(false)}
-          />
-        )}
 
         {/* Leak Breakdown Table */}
         <motion.div
@@ -526,20 +518,20 @@ export default function LeakDashboard() {
                 </div>
               </div>
 
-              <div className="mt-6 p-4 bg-amber-500/10 rounded-lg border border-amber-500/20">
+              <div className="mt-6 p-4 bg-violet-500/10 rounded-lg border border-violet-500/20">
                 <div className="flex flex-col items-center text-center gap-3">
                   <div>
                     <p className="text-slate-300 font-medium mb-1">Ready to start recovering?</p>
                     <p className="text-slate-400 text-sm">
-                      Launch your first reactivation campaign and start turning dormant leads into revenue.
+                      Book a free strategy call to get a personalized implementation plan.
                     </p>
                   </div>
                   <Button
-                    className="bg-amber-500 hover:bg-amber-600 text-white"
-                    onClick={() => setShowCampaignBuilder(true)}
+                    className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:shadow-lg hover:shadow-violet-500/50 text-white"
+                    onClick={() => setIsCalendlyOpen(true)}
                   >
                     <Rocket className="w-4 h-4 mr-2" />
-                    Launch First Campaign
+                    Book Strategy Call
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </div>
@@ -559,6 +551,12 @@ export default function LeakDashboard() {
           ← Back to Home
         </Button>
       </footer>
+
+      {/* Calendly Modal */}
+      <CalendlyModal 
+        isOpen={isCalendlyOpen} 
+        onClose={() => setIsCalendlyOpen(false)} 
+      />
     </div>
   );
 }
