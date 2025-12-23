@@ -13,12 +13,67 @@ export interface Leak {
   severity: "critical" | "high" | "medium" | "low";
   details: LeakDetails;
   recommendation: string;
+  quickWin?: boolean;
+}
+
+// Dormant Leads Result
+export interface DormantLeadsResult {
+  monthlyLoss: number;
+  annualLoss: number;
+  viableLeads: number;
+  expectedCustomers: number;
+  bestCaseCustomers: number;
+  customersLost: number;
+  currentlyRecovered: number;
+  databaseAge: string;
+  viabilityRate: number;
+  expectedResponseRate: number;
+  bestCaseResponseRate: number;
+  recontactStatus: string;
+  upside: number;
+}
+
+// Past Customers Result
+export interface PastCustomersResult {
+  monthlyLoss: number;
+  annualLoss: number;
+  winnableCustomers: number;
+  customersLost: number;
+  currentlyRecovered: number;
+  timeSinceLastPurchase: string;
+  winBackRate: number;
+  returnPurchaseBonus: number;
+  currentStatus: string;
+  frequencyScore: number;
+  recommendedFrequency: string;
+  upside: number;
+}
+
+// Reactivation Leak Result
+export interface ReactivationLeak {
+  type: "reactivation";
+  label: string;
+  monthlyLoss: number;
+  annualLoss: number;
+  dormantLeads: DormantLeadsResult | null;
+  pastCustomers: PastCustomersResult | null;
+  severity: "critical" | "high" | "medium" | "low";
+  quickWinScore: number;
+  totalUpside: number;
+  implementationTime: string;
+  expectedROI: string;
+  paybackPeriod: string;
+  isQuickWin: boolean;
 }
 
 export interface CalculationResult {
   totalMonthlyLoss: number;
   totalAnnualLoss: number;
   leaks: Leak[];
+  reactivationOpportunity: ReactivationLeak | null;
+  operationalLeaks: Leak[];
+  allLeaks: Leak[];
+  hasReactivationData: boolean;
 }
 
 // Response time conversion penalties
@@ -394,10 +449,202 @@ export function calculateHoldTimeLeak(data: CalculatorFormData): Leak {
   };
 }
 
+// ============================================
+// REACTIVATION LEAK CALCULATIONS
+// ============================================
+
+// Viability rates by database age (industry research)
+const DATABASE_VIABILITY_RATES: Record<string, number> = {
+  "0-3months": 0.45,
+  "3-6months": 0.35,
+  "6-12months": 0.25,
+  "1-2years": 0.15,
+  "2+years": 0.08,
+};
+
+// Win-back rates by recency (industry benchmarks)
+const WIN_BACK_RATES: Record<string, number> = {
+  "3-6months": 0.28,
+  "6-12months": 0.20,
+  "1-2years": 0.12,
+  "2+years": 0.06,
+};
+
+// Frequency impact on success
+const FREQUENCY_MULTIPLIERS: Record<string, number> = {
+  "monthly": 1.0,
+  "quarterly": 0.85,
+  "twice-a-year": 0.70,
+  "once-a-year": 0.50,
+  "rarely": 0.30,
+};
+
+// FUNCTION 1: Calculate Dormant Leads Value
+export function calculateDormantLeadsValue(data: CalculatorFormData): DormantLeadsResult {
+  const totalDormantLeads = data.totalDormantLeads || 0;
+  const databaseAge = data.databaseAge || "6-12months";
+  const everRecontactedDormant = data.everRecontactedDormant || false;
+  const percentageRecontactedDormant = data.percentageRecontactedDormant || 0;
+  const dormantResponseCount = data.dormantResponseCount || 0;
+  const closeRate = getCloseRate(data) * 100; // Convert to percentage
+  const customerLifetimeValue = getLTV(data);
+
+  const viabilityRate = DATABASE_VIABILITY_RATES[databaseAge] || 0.25;
+  const viableLeads = totalDormantLeads * viabilityRate;
+
+  // Reactivation campaigns typically have 15-30% response rate
+  const reactivationResponseRate = 0.22; // 22% industry average
+  const bestInClassResponseRate = 0.35; // 35% with proper system
+
+  // Expected customers from reactivation
+  const expectedCustomers = viableLeads * reactivationResponseRate * (closeRate / 100);
+  const bestCaseCustomers = viableLeads * bestInClassResponseRate * (closeRate / 100);
+
+  // Calculate current gap
+  let customersLost: number;
+  let currentlyRecovered = 0;
+
+  if (!everRecontactedDormant) {
+    // Never contacted = losing 100% of opportunity
+    customersLost = expectedCustomers;
+  } else {
+    // They did some outreach, calculate what they're missing
+    const leadsRecontacted = totalDormantLeads * (percentageRecontactedDormant / 100);
+    currentlyRecovered = dormantResponseCount;
+    customersLost = Math.max(0, expectedCustomers - currentlyRecovered);
+  }
+
+  const monthlyLoss = customersLost * customerLifetimeValue;
+  const bestCaseRevenue = bestCaseCustomers * customerLifetimeValue;
+
+  return {
+    monthlyLoss: Math.round(monthlyLoss),
+    annualLoss: Math.round(monthlyLoss * 12),
+    viableLeads: Math.round(viableLeads),
+    expectedCustomers: Math.round(expectedCustomers),
+    bestCaseCustomers: Math.round(bestCaseCustomers),
+    customersLost: Math.round(customersLost),
+    currentlyRecovered: currentlyRecovered,
+    databaseAge: databaseAge,
+    viabilityRate: Math.round(viabilityRate * 100),
+    expectedResponseRate: 22,
+    bestCaseResponseRate: 35,
+    recontactStatus: everRecontactedDormant
+      ? `Reached ${percentageRecontactedDormant}% of database`
+      : "Never contacted",
+    upside: Math.round(bestCaseRevenue - (currentlyRecovered * customerLifetimeValue)),
+  };
+}
+
+// FUNCTION 2: Calculate Past Customer Value
+export function calculatePastCustomerValue(data: CalculatorFormData): PastCustomersResult {
+  const numPastCustomers = data.numPastCustomers || 0;
+  const avgTimeSinceLastPurchase = data.avgTimeSinceLastPurchase || "6-12months";
+  const sendsReengagementCampaigns = data.sendsReengagementCampaigns || false;
+  const reengagementFrequency = data.reengagementFrequency || "rarely";
+  const reengagementResponseRate = data.reengagementResponseRate || 0;
+  const avgTransactionValue = data.avgTransactionValue || 0;
+
+  const winBackRate = WIN_BACK_RATES[avgTimeSinceLastPurchase] || 0.20;
+  const winnableCustomers = numPastCustomers * winBackRate;
+
+  // Past customers typically spend 30% more on return (established trust)
+  const returnPurchaseValue = avgTransactionValue * 1.3;
+
+  // Calculate gap
+  let customersLost: number;
+  let currentlyRecovered = 0;
+
+  if (!sendsReengagementCampaigns) {
+    // No campaigns = losing 100% of opportunity
+    customersLost = winnableCustomers;
+  } else {
+    // They're doing something, calculate gap
+    currentlyRecovered = numPastCustomers * (reengagementResponseRate / 100);
+    customersLost = Math.max(0, winnableCustomers - currentlyRecovered);
+  }
+
+  const monthlyLoss = customersLost * returnPurchaseValue;
+  const bestCaseRevenue = winnableCustomers * returnPurchaseValue;
+
+  const frequencyImpact = sendsReengagementCampaigns
+    ? FREQUENCY_MULTIPLIERS[reengagementFrequency] || 0.30
+    : 0;
+
+  return {
+    monthlyLoss: Math.round(monthlyLoss),
+    annualLoss: Math.round(monthlyLoss * 12),
+    winnableCustomers: Math.round(winnableCustomers),
+    customersLost: Math.round(customersLost),
+    currentlyRecovered: Math.round(currentlyRecovered),
+    timeSinceLastPurchase: avgTimeSinceLastPurchase,
+    winBackRate: Math.round(winBackRate * 100),
+    returnPurchaseBonus: 30,
+    currentStatus: sendsReengagementCampaigns
+      ? `${reengagementFrequency} campaigns reaching ${reengagementResponseRate}%`
+      : "No reactivation campaigns",
+    frequencyScore: Math.round(frequencyImpact * 100),
+    recommendedFrequency: "Monthly",
+    upside: Math.round(bestCaseRevenue - (currentlyRecovered * returnPurchaseValue)),
+  };
+}
+
+// FUNCTION 3: Calculate Reactivation Leak (master function)
+export function calculateReactivationLeak(data: CalculatorFormData): ReactivationLeak | null {
+  const hasDormantLeads = data.hasDormantLeads === true;
+  const hasPastCustomers = data.hasPastCustomers === true;
+
+  // If no reactivation data, return null
+  if (!hasDormantLeads && !hasPastCustomers) {
+    return null;
+  }
+
+  const dormantLeads = hasDormantLeads ? calculateDormantLeadsValue(data) : null;
+  const pastCustomers = hasPastCustomers ? calculatePastCustomerValue(data) : null;
+
+  const totalMonthlyLoss =
+    (dormantLeads?.monthlyLoss || 0) + (pastCustomers?.monthlyLoss || 0);
+
+  const totalUpside =
+    (dormantLeads?.upside || 0) + (pastCustomers?.upside || 0);
+
+  // Calculate quick-win score (higher = easier money)
+  let quickWinScore = 0;
+  if (dormantLeads && dormantLeads.viabilityRate > 25) quickWinScore += 30;
+  if (pastCustomers && pastCustomers.winBackRate > 15) quickWinScore += 30;
+  if (dormantLeads && !data.everRecontactedDormant) quickWinScore += 20;
+  if (pastCustomers && !data.sendsReengagementCampaigns) quickWinScore += 20;
+
+  const severity: "critical" | "high" | "medium" | "low" =
+    totalMonthlyLoss > 20000 ? "critical" : totalMonthlyLoss > 10000 ? "high" : "medium";
+
+  return {
+    type: "reactivation",
+    label: "Dormant Leads & Customer Reactivation",
+    monthlyLoss: totalMonthlyLoss,
+    annualLoss: totalMonthlyLoss * 12,
+    dormantLeads: dormantLeads,
+    pastCustomers: pastCustomers,
+    severity: severity,
+    quickWinScore: quickWinScore, // 0-100 scale
+    totalUpside: totalUpside,
+    implementationTime: "7-14 days",
+    expectedROI: "3-5x in first 30 days",
+    paybackPeriod: "7-10 days",
+    isQuickWin: true,
+  };
+}
+
 // Main calculation function
 export function calculateAllLeaks(formData: CalculatorFormData): CalculationResult {
-  // Calculate all individual leaks
-  const leaks: Leak[] = [
+  // Check for reactivation data
+  const hasReactivationData = formData.hasDormantLeads === true || formData.hasPastCustomers === true;
+  
+  // Calculate reactivation leak first (if applicable)
+  const reactivationOpportunity = calculateReactivationLeak(formData);
+
+  // Calculate all operational leaks
+  const operationalLeaks: Leak[] = [
     calculateMissedCallsLeak(formData),
     calculateSlowResponseLeak(formData),
     calculateNoFollowUpLeak(formData),
@@ -407,22 +654,60 @@ export function calculateAllLeaks(formData: CalculatorFormData): CalculationResu
     calculateHoldTimeLeak(formData),
   ];
 
-  // Sort by monthly loss (descending)
-  leaks.sort((a, b) => b.monthlyLoss - a.monthlyLoss);
+  // Sort operational leaks by monthly loss (descending)
+  operationalLeaks.sort((a, b) => b.monthlyLoss - a.monthlyLoss);
 
-  // Assign ranks
-  leaks.forEach((leak, index) => {
-    leak.rank = index + 1;
+  // Assign ranks to operational leaks (starting from 2 if reactivation exists)
+  const rankOffset = reactivationOpportunity ? 1 : 0;
+  operationalLeaks.forEach((leak, index) => {
+    leak.rank = index + 1 + rankOffset;
   });
 
-  // Calculate totals
-  const totalMonthlyLoss = leaks.reduce((sum, leak) => sum + leak.monthlyLoss, 0);
+  // Create reactivation as a Leak for the allLeaks array
+  let reactivationAsLeak: Leak | null = null;
+  if (reactivationOpportunity) {
+    reactivationAsLeak = {
+      rank: 1, // Always first
+      type: "reactivation",
+      label: reactivationOpportunity.label,
+      monthlyLoss: reactivationOpportunity.monthlyLoss,
+      annualLoss: reactivationOpportunity.annualLoss,
+      severity: reactivationOpportunity.severity,
+      quickWin: true,
+      details: {
+        dormantLeadsValue: reactivationOpportunity.dormantLeads?.monthlyLoss || 0,
+        pastCustomersValue: reactivationOpportunity.pastCustomers?.monthlyLoss || 0,
+        quickWinScore: reactivationOpportunity.quickWinScore,
+        totalUpside: reactivationOpportunity.totalUpside,
+        implementationTime: reactivationOpportunity.implementationTime,
+        expectedROI: reactivationOpportunity.expectedROI,
+      },
+      recommendation: reactivationOpportunity.quickWinScore > 50
+        ? "This is your BIGGEST quick-win opportunity. A simple email/SMS campaign to dormant leads can generate revenue within days."
+        : "Reactivating past leads and customers is low-hanging fruit. Start with a simple 'We miss you' campaign.",
+    };
+  }
+
+  // Combine all leaks with reactivation first
+  const allLeaks: Leak[] = reactivationAsLeak
+    ? [reactivationAsLeak, ...operationalLeaks]
+    : operationalLeaks;
+
+  // Calculate totals (including reactivation)
+  const totalMonthlyLoss = allLeaks.reduce((sum, leak) => sum + leak.monthlyLoss, 0);
   const totalAnnualLoss = totalMonthlyLoss * 12;
+
+  // Legacy leaks array (for backwards compatibility) - same as allLeaks
+  const leaks = allLeaks;
 
   return {
     totalMonthlyLoss,
     totalAnnualLoss,
     leaks,
+    reactivationOpportunity,
+    operationalLeaks,
+    allLeaks,
+    hasReactivationData,
   };
 }
 
