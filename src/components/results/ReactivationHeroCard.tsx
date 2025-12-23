@@ -1,7 +1,5 @@
 import { motion } from "framer-motion";
-import { Trophy, Zap, Sparkles } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { ArrowRight, Users, RefreshCw } from "lucide-react";
 import { formatCurrency, ReactivationLeak } from "@/utils/calculations";
 
 interface ReactivationHeroCardProps {
@@ -11,118 +9,111 @@ interface ReactivationHeroCardProps {
 export const ReactivationHeroCard = ({ reactivation }: ReactivationHeroCardProps) => {
   return (
     <motion.div
-      initial={{ opacity: 0, y: -20, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.6, type: "spring" }}
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      className="relative"
     >
-      <Card className="relative overflow-hidden border-2 border-amber-400/50 shadow-2xl shadow-amber-500/20">
-        {/* Animated gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-amber-400 via-orange-500 to-red-500" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-white/10 via-transparent to-transparent" />
+      {/* Main card */}
+      <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-card shadow-depth-lg">
+        {/* Subtle pattern overlay */}
+        <div className="absolute inset-0 pattern-dots opacity-30" />
         
-        {/* Glow effect */}
-        <div className="absolute -inset-1 bg-gradient-to-br from-amber-400 via-orange-500 to-red-500 blur-xl opacity-30 animate-pulse" />
+        {/* Gradient accent on left edge */}
+        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-primary via-accent to-primary/50" />
 
-        {/* Quick Win Badge */}
-        <div className="absolute top-4 right-4 z-10">
-          <Badge className="bg-emerald-500 text-white px-3 py-1.5 text-sm font-bold shadow-lg animate-pulse">
-            <Zap className="w-3.5 h-3.5 mr-1" />
-            QUICK WIN
-          </Badge>
-        </div>
-
-        <CardContent className="relative p-8 md:p-10">
+        <div className="relative p-8 lg:p-10">
           {/* Header */}
-          <div className="flex items-center gap-3 mb-6">
-            <motion.div
-              animate={{ 
-                scale: [1, 1.1, 1],
-                rotate: [0, 5, -5, 0]
-              }}
-              transition={{ 
-                duration: 2, 
-                repeat: Infinity,
-                repeatType: "reverse"
-              }}
-            >
-              <Trophy className="w-8 h-8 text-amber-100" />
-            </motion.div>
-            <div>
-              <p className="text-amber-100 text-sm font-semibold tracking-wider uppercase">
-                Quick Win Opportunity
-              </p>
-              <div className="h-0.5 w-full bg-white/30 mt-1" />
+          <div className="flex items-start justify-between gap-4 mb-8">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 border border-primary/20">
+                <RefreshCw className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-widest text-primary mb-1">
+                  Quick Win Opportunity
+                </p>
+                <h2 className="text-heading font-bold text-foreground">
+                  Dormant Leads & Customer Reactivation
+                </h2>
+              </div>
+            </div>
+            
+            {/* Quick win badge */}
+            <div className="flex-shrink-0 px-3 py-1.5 rounded-full bg-success/10 border border-success/20">
+              <span className="text-xs font-semibold text-success">Fastest ROI</span>
             </div>
           </div>
 
-          {/* Title */}
-          <div className="flex items-center gap-3 mb-8">
-            <Sparkles className="w-6 h-6 text-amber-100" />
-            <h2 className="text-2xl md:text-3xl font-bold text-white">
-              💤 Dormant Leads & Customer Reactivation
-            </h2>
-          </div>
-
-          {/* Main metrics */}
-          <div className="grid md:grid-cols-2 gap-6 mb-6">
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-              <p className="text-amber-100 text-sm font-medium mb-2">
-                Untapped Monthly Opportunity
+          {/* Stats grid */}
+          <div className="grid sm:grid-cols-2 gap-6 mb-8">
+            <div className="p-6 rounded-xl bg-secondary/50 border border-border">
+              <p className="text-sm font-medium text-muted-foreground mb-2">
+                Monthly Recovery Potential
               </p>
-              <motion.p
-                initial={{ scale: 0.9 }}
-                animate={{ scale: 1 }}
-                className="text-4xl md:text-5xl font-bold text-white"
-              >
-                {formatCurrency(reactivation.monthlyLoss)}
-              </motion.p>
+              <div className="flex items-baseline gap-1">
+                <span className="text-display font-black text-gradient-primary font-numeric">
+                  {formatCurrency(reactivation.monthlyLoss)}
+                </span>
+              </div>
             </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-              <p className="text-amber-100 text-sm font-medium mb-2">
+            <div className="p-6 rounded-xl bg-secondary/50 border border-border">
+              <p className="text-sm font-medium text-muted-foreground mb-2">
                 Annual Value
               </p>
-              <motion.p
-                initial={{ scale: 0.9 }}
-                animate={{ scale: 1 }}
-                className="text-4xl md:text-5xl font-bold text-white"
-              >
-                {formatCurrency(reactivation.annualLoss)}
-              </motion.p>
+              <div className="flex items-baseline gap-1">
+                <span className="text-display font-black text-foreground font-numeric">
+                  {formatCurrency(reactivation.annualLoss)}
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Quick Win Info */}
-          <div className="flex items-center gap-4 p-4 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20">
-            <div className="w-12 h-12 rounded-full bg-emerald-500/30 flex items-center justify-center">
-              <Zap className="w-6 h-6 text-emerald-300" />
+          {/* Implementation details */}
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3 pt-6 border-t border-border">
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-success" />
+              <span className="text-sm text-muted-foreground">
+                {reactivation.implementationTime}
+              </span>
             </div>
-            <div className="flex-1">
-              <p className="text-white font-semibold">
-                ⚡ QUICK WIN: Fastest money to recover
-              </p>
-              <p className="text-amber-100 text-sm">
-                {reactivation.implementationTime} • Expected ROI: {reactivation.expectedROI} • Payback: {reactivation.paybackPeriod}
-              </p>
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-primary" />
+              <span className="text-sm text-muted-foreground">
+                Expected: {reactivation.expectedROI}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-accent" />
+              <span className="text-sm text-muted-foreground">
+                Payback: {reactivation.paybackPeriod}
+              </span>
             </div>
           </div>
 
-          {/* Quick Win Score */}
+          {/* Progress indicator */}
           {reactivation.quickWinScore > 0 && (
-            <div className="mt-4 flex items-center gap-2">
-              <span className="text-amber-100 text-sm">Opportunity Score:</span>
-              <div className="flex-1 h-2 bg-white/20 rounded-full overflow-hidden">
+            <div className="mt-6 pt-6 border-t border-border">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Opportunity Score
+                </span>
+                <span className="text-sm font-bold text-foreground font-numeric">
+                  {reactivation.quickWinScore}/100
+                </span>
+              </div>
+              <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${reactivation.quickWinScore}%` }}
-                  transition={{ duration: 1, delay: 0.5 }}
-                  className="h-full bg-gradient-to-r from-emerald-400 to-emerald-300 rounded-full"
+                  transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
+                  className="h-full bg-gradient-to-r from-primary to-accent rounded-full"
                 />
               </div>
-              <span className="text-white font-bold text-sm">{reactivation.quickWinScore}/100</span>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </motion.div>
   );
 };
