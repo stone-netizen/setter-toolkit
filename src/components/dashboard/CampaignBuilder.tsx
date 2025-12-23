@@ -46,12 +46,56 @@ export const CampaignBuilder = ({
     (reactivation?.pastCustomers?.winnableCustomers || 0);
 
   const budgetNum = parseFloat(budget) || 0;
-  const costPerContact = totalLeads > 0 ? budgetNum / totalLeads : 0;
+  
+  // Realistic per-channel costs
+  const channelCosts = {
+    sms: 0.02,      // $0.02 per SMS
+    email: 0.001,   // $0.001 per email
+    phone: 2.50     // $2.50 per call (avg 5 min at $30/hr)
+  };
+  
+  const messagesPerContact = 3; // Sequence of 3 touchpoints per channel
+  const phoneResponseRate = 0.22; // Only call responders
+  
+  // Calculate cost per contact based on selected channels
+  const calculateCostPerContact = () => {
+    if (channels.length === 0 || totalLeads === 0) return 0;
+    
+    let costPerContact = 0;
+    
+    if (channels.includes("sms")) {
+      costPerContact += messagesPerContact * channelCosts.sms;
+    }
+    if (channels.includes("email")) {
+      costPerContact += messagesPerContact * channelCosts.email;
+    }
+    if (channels.includes("phone")) {
+      // Only call responders (~22% of total)
+      costPerContact += phoneResponseRate * channelCosts.phone;
+    }
+    
+    return costPerContact;
+  };
+  
+  const costPerContact = calculateCostPerContact();
+  const totalCampaignCost = costPerContact * totalLeads;
+  const setupFee = 500; // Campaign setup fee for scripts, automation, templates
+  const remainingBudget = budgetNum - totalCampaignCost - setupFee;
+  
+  // With realistic costs, we can reach the entire database
+  const estimatedReach = totalLeads;
   const expectedResponses = Math.round(totalLeads * 0.22);
-  const expectedConversions = Math.round(expectedResponses * 0.3);
+  // Calculate close rate from closedDeals / totalLeads if available
+  const closeRate = formData.totalMonthlyLeads && formData.closedDealsPerMonth 
+    ? formData.closedDealsPerMonth / formData.totalMonthlyLeads 
+    : 0.3;
+  const expectedConversions = Math.max(1, Math.round(expectedResponses * closeRate));
   const avgTransactionValue = formData.avgTransactionValue || 500;
-  const projectedRevenue = expectedConversions * avgTransactionValue;
+  const repeatPurchases = formData.avgPurchasesPerCustomer || 3;
+  const customerLifetimeValue = avgTransactionValue * repeatPurchases;
+  const projectedRevenue = expectedConversions * customerLifetimeValue;
   const expectedROI = budgetNum > 0 ? projectedRevenue / budgetNum : 0;
+  const paybackDays = projectedRevenue > 0 ? Math.round((budgetNum / projectedRevenue) * 30) : 0;
 
   const toggleChannel = (channel: string) => {
     setChannels((prev) =>
@@ -340,16 +384,39 @@ export const CampaignBuilder = ({
                           />
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-4 p-4 bg-slate-700/50 rounded-lg">
-                        <div>
-                          <p className="text-xs text-slate-500 uppercase">Estimated Reach</p>
-                          <p className="text-xl font-bold text-slate-200">{totalLeads} contacts</p>
+                      <div className="space-y-3 p-4 bg-slate-700/50 rounded-lg">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-xs text-slate-500 uppercase">Estimated Reach</p>
+                            <p className="text-xl font-bold text-emerald-400">{estimatedReach} contacts</p>
+                            <p className="text-xs text-slate-500">(Your full database)</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-slate-500 uppercase">Cost per Contact</p>
+                            <p className="text-xl font-bold text-slate-200">
+                              ${costPerContact.toFixed(2)}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-xs text-slate-500 uppercase">Cost per Contact</p>
-                          <p className="text-xl font-bold text-slate-200">
-                            ${costPerContact.toFixed(2)}
-                          </p>
+                        <div className="pt-3 border-t border-slate-600 space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-slate-400">Campaign costs ({estimatedReach} × ${costPerContact.toFixed(2)})</span>
+                            <span className="text-slate-200">{formatCurrency(totalCampaignCost)}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-slate-400">Setup fee (scripts, templates, automation)</span>
+                            <span className="text-slate-200">{formatCurrency(setupFee)}</span>
+                          </div>
+                          <div className="flex justify-between text-sm font-medium pt-2 border-t border-slate-600">
+                            <span className="text-slate-300">Total estimated cost</span>
+                            <span className="text-amber-400">{formatCurrency(totalCampaignCost + setupFee)}</span>
+                          </div>
+                          {remainingBudget > 0 && (
+                            <div className="flex justify-between text-sm text-emerald-400">
+                              <span>Remaining for scaling/future</span>
+                              <span>{formatCurrency(remainingBudget)}</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -383,7 +450,11 @@ export const CampaignBuilder = ({
                     </h3>
                     <div className="space-y-4 p-4 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
                       <div className="flex justify-between">
-                        <span className="text-slate-400">Expected responses</span>
+                        <span className="text-slate-400">Campaign reach</span>
+                        <span className="text-slate-200 font-medium">{estimatedReach} contacts</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Expected responses (22%)</span>
                         <span className="text-slate-200 font-medium">{expectedResponses}</span>
                       </div>
                       <div className="flex justify-between">
@@ -401,6 +472,10 @@ export const CampaignBuilder = ({
                         <span className="text-emerald-400 font-bold text-2xl">
                           {expectedROI.toFixed(1)}x
                         </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Payback period</span>
+                        <span className="text-emerald-400 font-medium">{paybackDays} days</span>
                       </div>
                     </div>
                   </div>
