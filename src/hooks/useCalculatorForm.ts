@@ -30,53 +30,13 @@ export const RESPONSE_TIMES = [
   { value: "dont-track", label: "Don't track" },
 ] as const;
 
-// Step schemas
-const step1Schema = z.object({
-  businessName: z.string().min(2, "Business name must be at least 2 characters"),
-  industry: z.string().min(1, "Please select an industry"),
-  yearsInBusiness: z.number().min(0, "Must be 0 or more").max(100, "Must be 100 or less"),
-  monthlyRevenue: z.number().min(1000, "Monthly revenue must be at least $1,000"),
-  avgTransactionValue: z.number().min(50, "Average transaction must be at least $50"),
-  email: z.string().email("Please enter a valid email address"),
-});
-
-const step2Schema = z.object({
-  totalMonthlyLeads: z.number().min(1, "Must have at least 1 lead"),
-  inboundCalls: z.number().min(0, "Cannot be negative"),
-  webFormSubmissions: z.number().min(0, "Cannot be negative"),
-  socialInquiries: z.number().min(0, "Cannot be negative"),
-});
-
-const step3Schema = z.object({
-  closedDealsPerMonth: z.number().min(0, "Cannot be negative"),
-  avgResponseTime: z.string().min(1, "Please select a response time"),
-  followUpAllLeads: z.boolean(),
-  percentageFollowedUp: z.number().min(0).max(100).optional(),
-  avgFollowUpAttempts: z.number().min(0, "Cannot be negative").max(20, "Maximum is 20"),
-  consultationLength: z.number().min(5, "Minimum 5 minutes").max(300, "Maximum 300 minutes"),
-});
-
-const step4Schema = z.object({
-  usesCrm: z.boolean().nullable(),
-  crmName: z.string().optional(),
-  followUpAttempts: z.string().optional(),
-});
-
-const step5Schema = z.object({
-  missedCallsPercentage: z.string().min(1, "Please select a percentage"),
-});
-
-const step6Schema = z.object({
-  respondsToReviews: z.boolean().nullable(),
-  usesEmailMarketing: z.boolean().nullable(),
-  hasChatWidget: z.boolean().nullable(),
-});
-
-const step7Schema = z.object({
-  contactName: z.string().optional(),
-  contactEmail: z.string().email("Please enter a valid email").optional().or(z.literal("")),
-  contactPhone: z.string().optional(),
-});
+export const MISSED_CALL_RATES = [
+  { value: "0-10", label: "0-10% (rarely miss)" },
+  { value: "10-25", label: "10-25% (miss some when busy)" },
+  { value: "25-50", label: "25-50% (miss quite a few)" },
+  { value: "50+", label: "50%+ (miss a lot)" },
+  { value: "unknown", label: "No idea" },
+] as const;
 
 // Full form schema
 export const calculatorFormSchema = z.object({
@@ -102,22 +62,37 @@ export const calculatorFormSchema = z.object({
   avgFollowUpAttempts: z.coerce.number().min(0, "Cannot be negative").max(20, "Maximum is 20"),
   consultationLength: z.coerce.number().min(5, "Minimum 5 minutes").max(300, "Maximum 300 minutes"),
 
-  // Step 4: CRM & Follow-up (legacy)
-  usesCrm: z.boolean().nullable().optional(),
+  // Step 4: Operations
+  businessHoursStart: z.string().min(1, "Please set start time"),
+  businessHoursEnd: z.string().min(1, "Please set end time"),
+  openSaturday: z.boolean(),
+  openSunday: z.boolean(),
+  answersAfterHours: z.boolean().nullable(),
+  answersWeekends: z.boolean().nullable(),
+  missedCallRate: z.string().min(1, "Please select an option"),
+  avgHoldTime: z.coerce.number().min(0, "Cannot be negative").max(30, "Maximum 30 minutes"),
+
+  // Step 5: Appointments
+  requiresAppointments: z.boolean().nullable(),
+  appointmentsBooked: z.coerce.number().min(0).optional(),
+  appointmentsShowUp: z.coerce.number().min(0).optional(),
+  sendsReminders: z.boolean().nullable().optional(),
+  reminderCount: z.coerce.number().min(1).max(5).optional(),
+  reminderMethods: z.array(z.string()).optional(),
+  chargesNoShowFee: z.boolean().nullable().optional(),
+  daysUntilAppointment: z.coerce.number().min(0).max(90).optional(),
+
+  // Step 6: Team Efficiency
+  numSalesStaff: z.coerce.number().min(1, "At least 1 staff member").max(100, "Maximum 100"),
+  avgHourlyLaborCost: z.coerce.number().min(10, "Minimum $10/hr").max(500, "Maximum $500/hr"),
+  qualifiesLeads: z.boolean().nullable(),
+  percentageUnqualified: z.coerce.number().min(0).max(100).optional(),
+  usesCRM: z.boolean().nullable().optional(),
   crmName: z.string().optional(),
 
-  // Step 5: Missed Calls
-  missedCallsPercentage: z.string().optional(),
-
-  // Step 6: Online Presence
-  respondsToReviews: z.boolean().nullable().optional(),
-  usesEmailMarketing: z.boolean().nullable().optional(),
-  hasChatWidget: z.boolean().nullable().optional(),
-
-  // Step 7: Contact Info
-  contactName: z.string().optional(),
-  contactEmail: z.string().optional(),
-  contactPhone: z.string().optional(),
+  // Step 7: Customer Value
+  repeatCustomers: z.boolean().nullable(),
+  avgPurchasesPerCustomer: z.coerce.number().min(1).max(50).optional(),
 });
 
 export type CalculatorFormData = z.infer<typeof calculatorFormSchema>;
@@ -145,31 +120,36 @@ const defaultValues: CalculatorFormData = {
   avgFollowUpAttempts: 0,
   consultationLength: 30,
   // Step 4
-  usesCrm: null,
-  crmName: "",
+  businessHoursStart: "09:00",
+  businessHoursEnd: "18:00",
+  openSaturday: false,
+  openSunday: false,
+  answersAfterHours: null,
+  answersWeekends: null,
+  missedCallRate: "",
+  avgHoldTime: 0,
   // Step 5
-  missedCallsPercentage: "0",
+  requiresAppointments: null,
+  appointmentsBooked: 0,
+  appointmentsShowUp: 0,
+  sendsReminders: null,
+  reminderCount: 2,
+  reminderMethods: [],
+  chargesNoShowFee: null,
+  daysUntilAppointment: 7,
   // Step 6
-  respondsToReviews: null,
-  usesEmailMarketing: null,
-  hasChatWidget: null,
+  numSalesStaff: 1,
+  avgHourlyLaborCost: 25,
+  qualifiesLeads: null,
+  percentageUnqualified: 20,
+  usesCRM: null,
+  crmName: "",
   // Step 7
-  contactName: "",
-  contactEmail: "",
-  contactPhone: "",
+  repeatCustomers: null,
+  avgPurchasesPerCustomer: 1,
 };
 
 export const TOTAL_STEPS = 7;
-
-const stepValidationFields: Record<number, (keyof CalculatorFormData)[]> = {
-  1: ["businessName", "industry", "yearsInBusiness", "monthlyRevenue", "avgTransactionValue", "email"],
-  2: ["totalMonthlyLeads", "inboundCalls", "webFormSubmissions", "socialInquiries"],
-  3: ["closedDealsPerMonth", "avgResponseTime", "followUpAllLeads", "avgFollowUpAttempts", "consultationLength"],
-  4: ["usesCrm"],
-  5: ["missedCallsPercentage"],
-  6: ["respondsToReviews"],
-  7: [],
-};
 
 export const useCalculatorForm = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -206,14 +186,6 @@ export const useCalculatorForm = () => {
       JSON.stringify({ formData: formValues, currentStep })
     );
   }, [formValues, currentStep]);
-
-  const validateStep = useCallback(async (step: number): Promise<boolean> => {
-    const fields = stepValidationFields[step] || [];
-    if (fields.length === 0) return true;
-    
-    const result = await form.trigger(fields);
-    return result;
-  }, [form]);
 
   const canContinue = useCallback((): boolean => {
     const values = form.getValues();
@@ -252,24 +224,42 @@ export const useCalculatorForm = () => {
           values.consultationLength <= 300
         );
       case 4:
-        return values.usesCrm !== null;
+        return (
+          values.businessHoursStart.length > 0 &&
+          values.businessHoursEnd.length > 0 &&
+          values.answersAfterHours !== null &&
+          values.answersWeekends !== null &&
+          values.missedCallRate.length > 0 &&
+          values.avgHoldTime >= 0 &&
+          values.avgHoldTime <= 30
+        );
       case 5:
-        return values.missedCallsPercentage !== undefined && values.missedCallsPercentage.length > 0;
+        if (values.requiresAppointments === null) return false;
+        if (values.requiresAppointments === false) return true;
+        return (
+          (values.appointmentsBooked ?? 0) >= 0 &&
+          (values.appointmentsShowUp ?? 0) >= 0 &&
+          values.sendsReminders !== null &&
+          (values.daysUntilAppointment ?? 0) >= 0
+        );
       case 6:
-        return values.respondsToReviews !== null;
+        return (
+          values.numSalesStaff >= 1 &&
+          values.avgHourlyLaborCost >= 10 &&
+          values.qualifiesLeads !== null
+        );
       case 7:
-        return true;
+        return values.repeatCustomers !== null;
       default:
         return false;
     }
   }, [currentStep, form]);
 
   const nextStep = useCallback(async () => {
-    const isValid = await validateStep(currentStep);
-    if (isValid && currentStep < TOTAL_STEPS) {
+    if (currentStep < TOTAL_STEPS) {
       setCurrentStep((prev) => prev + 1);
     }
-  }, [currentStep, validateStep]);
+  }, [currentStep]);
 
   const prevStep = useCallback(() => {
     if (currentStep > 1) {
@@ -291,7 +281,6 @@ export const useCalculatorForm = () => {
     nextStep,
     prevStep,
     canContinue,
-    validateStep,
     resetForm,
     progressPercentage,
     totalSteps: TOTAL_STEPS,
