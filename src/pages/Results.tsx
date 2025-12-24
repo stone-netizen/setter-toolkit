@@ -11,6 +11,7 @@ import { HeroSection } from "@/components/results/HeroSection";
 import { QuickWinCard } from "@/components/results/QuickWinCard";
 import { LeakBreakdownGrid } from "@/components/results/LeakBreakdownGrid";
 import { StrategyCallTimeline } from "@/components/results/StrategyCallTimeline";
+import { MethodologyDrawer } from "@/components/results/MethodologyDrawer";
 
 const RESULTS_STORAGE_KEY = "leakDetectorResults";
 
@@ -156,6 +157,9 @@ export default function Results() {
             </motion.div>
           </div>
         </section>
+
+        {/* Methodology Drawer */}
+        <MethodologyDrawer />
 
         {/* Footer */}
         <div className="py-8 text-center">
