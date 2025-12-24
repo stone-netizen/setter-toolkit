@@ -76,14 +76,14 @@ export interface CalculationResult {
   hasReactivationData: boolean;
 }
 
-// Response time conversion penalties
-const RESPONSE_TIME_MULTIPLIERS: Record<string, number> = {
-  "<5min": 1.0,
-  "5-30min": 0.85,
-  "30min-2hr": 0.60,
-  "2-24hr": 0.35,
-  "24hr+": 0.15,
-  "dont-track": 0.50,
+// Response time conversion - percentage of leads lost due to slow response
+const RESPONSE_TIME_LOSS_RATES: Record<string, number> = {
+  "<5min": 0.00,      // Optimal - no loss
+  "5-30min": 0.10,    // 10% of leads go cold
+  "30min-2hr": 0.25,  // 25% loss
+  "2-24hr": 0.45,     // 45% loss
+  "24hr+": 0.70,      // 70% loss
+  "dont-track": 0.35, // Assume moderate loss
 };
 
 // Missed call rate conversion
@@ -92,100 +92,99 @@ const MISSED_CALL_RATES: Record<string, number> = {
   "10-25": 0.175,
   "25-50": 0.375,
   "50+": 0.65,
-  "unknown": 0.45, // Industry average
+  "unknown": 0.30,
 };
 
-// Helper function to get LTV (for LOST LEADS - new business never closed)
+// Helper: Get average transaction value
+function getAvgTransactionValue(data: CalculatorFormData): number {
+  return data.avgTransactionValue || 0;
+}
+
+// Helper: Get customer lifetime value
 function getLTV(data: CalculatorFormData): number {
   const avgTransaction = data.avgTransactionValue || 0;
   const repeatPurchases = data.avgPurchasesPerCustomer || 1;
   return avgTransaction * repeatPurchases;
 }
 
-// Helper function to get single transaction value (for LOST BOOKINGS/TRANSACTIONS)
-function getTransactionValue(data: CalculatorFormData): number {
-  return data.avgTransactionValue || 0;
-}
-
-// Helper function to get monthly revenue for sanity capping
+// Helper: Get monthly revenue
 function getMonthlyRevenue(data: CalculatorFormData): number {
   return data.monthlyRevenue || 1;
 }
 
-// Helper function to get close rate
+// Helper: Get close rate
 function getCloseRate(data: CalculatorFormData): number {
   const totalLeads = data.totalMonthlyLeads || 1;
   const closedDeals = data.closedDealsPerMonth || 0;
-  return closedDeals / totalLeads;
+  return Math.min(closedDeals / totalLeads, 0.5); // Cap at 50%
 }
 
-// Helper to determine severity based on monthly loss
-function getSeverity(monthlyLoss: number): "critical" | "high" | "medium" | "low" {
-  if (monthlyLoss >= 15000) return "critical";
-  if (monthlyLoss >= 7500) return "high";
-  if (monthlyLoss >= 2500) return "medium";
-  return "low";
+// Helper: Determine severity based on % of monthly revenue
+function getSeverityByPercent(percent: number): "critical" | "high" | "medium" | "low" {
+  if (percent >= 0.08) return "critical";  // 8%+ of revenue
+  if (percent >= 0.04) return "high";      // 4-8%
+  if (percent >= 0.02) return "medium";    // 2-4%
+  return "low";                            // <2%
 }
 
-// Helper to cap individual leak at a percentage of monthly revenue
-function capLoss(loss: number, monthlyRevenue: number, maxPercent: number = 0.25): number {
-  const cap = monthlyRevenue * maxPercent;
-  return Math.min(loss, cap);
-}
+// =====================================================
+// LEAK CALCULATIONS - CORRECTED FORMULAS
+// =====================================================
 
-// 1. Missed Calls Leak - Uses LTV (lost leads, not lost transactions)
+// 1. MISSED CALLS - Lost new leads (use LTV, but value = leads × closeRate × LTV)
 export function calculateMissedCallsLeak(data: CalculatorFormData): Leak {
   const missedCallRateKey = data.missedCallRate || "unknown";
-  const missedCallRate = MISSED_CALL_RATES[missedCallRateKey] || 0.45;
+  const missedCallRate = MISSED_CALL_RATES[missedCallRateKey] || 0.30;
   const inboundCalls = data.inboundCalls || 0;
   const closeRate = getCloseRate(data);
   const ltv = getLTV(data);
   const monthlyRevenue = getMonthlyRevenue(data);
 
+  // Missed calls = lost lead opportunities
   const missedCalls = Math.round(inboundCalls * missedCallRate);
-  const lostDeals = missedCalls * closeRate;
-  const rawLoss = Math.round(lostDeals * ltv);
-  // Cap at 20% of monthly revenue
-  const monthlyLoss = capLoss(rawLoss, monthlyRevenue, 0.20);
-  const annualLoss = monthlyLoss * 12;
+  
+  // Value of each missed call = probability it would have closed × LTV
+  const valuePerMissedCall = closeRate * ltv;
+  const rawLoss = missedCalls * valuePerMissedCall;
+  
+  // Cap at 8% of monthly revenue
+  const monthlyLoss = Math.min(rawLoss, monthlyRevenue * 0.08);
 
   return {
-    rank: 0, // Will be set after sorting
+    rank: 0,
     type: "missedCalls",
     label: "Missed Calls",
-    monthlyLoss,
-    annualLoss,
-    severity: getSeverity(monthlyLoss),
+    monthlyLoss: Math.round(monthlyLoss),
+    annualLoss: Math.round(monthlyLoss * 12),
+    severity: getSeverityByPercent(monthlyLoss / monthlyRevenue),
     details: {
       missedCallRate: `${(missedCallRate * 100).toFixed(0)}%`,
       missedCallsPerMonth: missedCalls,
-      lostDealsPerMonth: lostDeals.toFixed(1),
-      ltv,
+      valuePerCall: Math.round(valuePerMissedCall),
     },
     recommendation: missedCallRate > 0.25
-      ? "Consider implementing an answering service or AI call handling to capture missed leads 24/7."
-      : "Your missed call rate is reasonable. Focus on optimizing other areas first.",
+      ? "Implement an answering service or AI call handling for 24/7 coverage."
+      : "Your missed call rate is reasonable. Focus on other areas first.",
   };
 }
 
-// 2. Slow Response Leak - Uses LTV (lost leads)
+// 2. SLOW RESPONSE - Lost leads due to delayed follow-up (use LTV)
 export function calculateSlowResponseLeak(data: CalculatorFormData): Leak {
   const responseTime = data.avgResponseTime || "dont-track";
-  const responseMultiplier = RESPONSE_TIME_MULTIPLIERS[responseTime] || 0.50;
+  const lossRate = RESPONSE_TIME_LOSS_RATES[responseTime] || 0.35;
   const totalLeads = data.totalMonthlyLeads || 0;
-  const actualCloseRate = getCloseRate(data);
+  const closeRate = getCloseRate(data);
   const ltv = getLTV(data);
   const monthlyRevenue = getMonthlyRevenue(data);
 
-  // Ideal close rate assumes <5min response (industry shows 391% higher contact rate)
-  const idealCloseRate = Math.min(actualCloseRate / responseMultiplier, 0.40);
-  const closeRateGap = Math.max(0, idealCloseRate - actualCloseRate);
+  // Leads lost due to slow response
+  const leadsLost = totalLeads * lossRate;
   
-  const lostDeals = totalLeads * closeRateGap;
-  const rawLoss = Math.round(lostDeals * ltv);
-  // Cap at 20% of monthly revenue
-  const monthlyLoss = capLoss(rawLoss, monthlyRevenue, 0.20);
-  const annualLoss = monthlyLoss * 12;
+  // Value = lost leads × probability of close × LTV
+  const rawLoss = leadsLost * closeRate * ltv;
+  
+  // Cap at 8% of monthly revenue
+  const monthlyLoss = Math.min(rawLoss, monthlyRevenue * 0.08);
 
   const responseTimeLabels: Record<string, string> = {
     "<5min": "Under 5 minutes",
@@ -200,23 +199,21 @@ export function calculateSlowResponseLeak(data: CalculatorFormData): Leak {
     rank: 0,
     type: "slowResponse",
     label: "Slow Response Time",
-    monthlyLoss,
-    annualLoss,
-    severity: getSeverity(monthlyLoss),
+    monthlyLoss: Math.round(monthlyLoss),
+    annualLoss: Math.round(monthlyLoss * 12),
+    severity: getSeverityByPercent(monthlyLoss / monthlyRevenue),
     details: {
       currentResponseTime: responseTimeLabels[responseTime] || responseTime,
-      responseEfficiency: `${(responseMultiplier * 100).toFixed(0)}%`,
-      potentialCloseRate: `${(idealCloseRate * 100).toFixed(1)}%`,
-      actualCloseRate: `${(actualCloseRate * 100).toFixed(1)}%`,
-      lostDealsPerMonth: lostDeals.toFixed(1),
+      leadsLostToSlowResponse: Math.round(leadsLost),
+      lossRate: `${(lossRate * 100).toFixed(0)}%`,
     },
-    recommendation: responseMultiplier < 0.6
-      ? "Speed is critical. Leads contacted within 5 minutes are 100x more likely to convert. Implement automated instant responses."
-      : "Your response time is good. Consider automation to maintain consistency during busy periods.",
+    recommendation: lossRate > 0.25
+      ? "Speed is critical. Implement automated instant responses to dramatically improve contact rates."
+      : "Your response time is good. Consider automation for consistency.",
   };
 }
 
-// 3. No Follow-Up Leak - Uses LTV (lost leads)
+// 3. NO FOLLOW-UP - Lost leads from insufficient persistence (use LTV)
 export function calculateNoFollowUpLeak(data: CalculatorFormData): Leak {
   const totalLeads = data.totalMonthlyLeads || 0;
   const followsAll = data.followUpAllLeads;
@@ -226,52 +223,46 @@ export function calculateNoFollowUpLeak(data: CalculatorFormData): Leak {
   const ltv = getLTV(data);
   const monthlyRevenue = getMonthlyRevenue(data);
 
-  // Calculate leads not followed up
+  // Leads not followed up at all
   const followUpRate = followsAll ? 1.0 : percentageFollowedUp / 100;
   const leadsNotFollowedUp = totalLeads * (1 - followUpRate);
 
-  // Optimal is 6-8 attempts, each missed attempt = ~5% lower close rate
-  const optimalAttempts = 6;
-  const attemptGap = Math.max(0, optimalAttempts - avgAttempts);
-  const closeRatePenalty = attemptGap * 0.05;
+  // Optimal is 5-6 attempts. Penalty for fewer attempts on followed-up leads
+  const optimalAttempts = 5;
+  const attemptPenalty = avgAttempts < optimalAttempts 
+    ? (optimalAttempts - avgAttempts) * 0.06 // 6% penalty per missing attempt
+    : 0;
   
-  // Leads that are followed up but with insufficient attempts
-  const leadsWithInsufficientFollowUp = totalLeads * followUpRate;
-  const lostFromInsufficientAttempts = leadsWithInsufficientFollowUp * closeRatePenalty * closeRate;
+  // Leads with insufficient follow-up
+  const leadsWithWeakFollowUp = totalLeads * followUpRate * attemptPenalty;
   
-  // Leads completely not followed up (assume 50% would have converted with proper follow-up)
-  const lostFromNoFollowUp = leadsNotFollowedUp * closeRate * 0.5;
-
-  const totalLostDeals = lostFromNoFollowUp + lostFromInsufficientAttempts;
-  const rawLoss = Math.round(totalLostDeals * ltv);
-  // Cap at 20% of monthly revenue
-  const monthlyLoss = capLoss(rawLoss, monthlyRevenue, 0.20);
-  const annualLoss = monthlyLoss * 12;
+  // Total lost opportunity
+  const totalLostLeads = leadsNotFollowedUp + leadsWithWeakFollowUp;
+  const rawLoss = totalLostLeads * closeRate * ltv;
+  
+  // Cap at 8% of monthly revenue
+  const monthlyLoss = Math.min(rawLoss, monthlyRevenue * 0.08);
 
   return {
     rank: 0,
     type: "noFollowUp",
     label: "Insufficient Follow-Up",
-    monthlyLoss,
-    annualLoss,
-    severity: getSeverity(monthlyLoss),
+    monthlyLoss: Math.round(monthlyLoss),
+    annualLoss: Math.round(monthlyLoss * 12),
+    severity: getSeverityByPercent(monthlyLoss / monthlyRevenue),
     details: {
       leadsNotFollowedUp: Math.round(leadsNotFollowedUp),
       currentAttempts: avgAttempts,
       optimalAttempts,
       followUpRate: `${(followUpRate * 100).toFixed(0)}%`,
-      lostDealsFromNoFollowUp: lostFromNoFollowUp.toFixed(1),
-      lostDealsFromFewAttempts: lostFromInsufficientAttempts.toFixed(1),
     },
     recommendation: avgAttempts < 5
-      ? "Top performers make 6-8 follow-up attempts. Implement an automated follow-up sequence to stay persistent without manual effort."
-      : followUpRate < 1
-        ? "You're missing leads. Ensure every inquiry gets at least one follow-up, even if just an automated email."
-        : "Your follow-up process is solid. Consider A/B testing your messaging to improve conversion.",
+      ? "Top performers make 5-6 follow-up attempts. Implement an automated follow-up sequence."
+      : "Your follow-up process is solid. Consider A/B testing your messaging.",
   };
 }
 
-// 4. No-Show Leak - Uses TRANSACTION VALUE (lost bookings, not lost leads)
+// 4. NO-SHOWS - Lost bookings/appointments (use TRANSACTION VALUE, not LTV)
 export function calculateNoShowLeak(data: CalculatorFormData): Leak {
   const requiresAppointments = data.requiresAppointments;
   
@@ -283,10 +274,7 @@ export function calculateNoShowLeak(data: CalculatorFormData): Leak {
       monthlyLoss: 0,
       annualLoss: 0,
       severity: "low",
-      details: {
-        applicable: false,
-        reason: "Business does not require appointments",
-      },
+      details: { applicable: false },
       recommendation: "Not applicable to your business model.",
     };
   }
@@ -294,46 +282,42 @@ export function calculateNoShowLeak(data: CalculatorFormData): Leak {
   const appointmentsBooked = data.appointmentsBooked || 0;
   const appointmentsShowUp = data.appointmentsShowUp || 0;
   const sendsReminders = data.sendsReminders;
-  // Use single transaction value for no-shows (they already booked, it's a lost transaction)
-  const transactionValue = getTransactionValue(data);
+  // Use single transaction value - these are lost BOOKINGS, not lost leads
+  const transactionValue = getAvgTransactionValue(data);
   const monthlyRevenue = getMonthlyRevenue(data);
 
   const noShows = Math.max(0, appointmentsBooked - appointmentsShowUp);
-  const noShowRate = appointmentsBooked > 0 ? noShows / appointmentsBooked : 0;
-
-  // 70% of no-shows are preventable with proper reminder systems
-  const preventabilityRate = sendsReminders ? 0.30 : 0.70;
+  
+  // 60% of no-shows are preventable with proper reminder systems
+  const preventabilityRate = sendsReminders ? 0.30 : 0.60;
   const preventableNoShows = noShows * preventabilityRate;
 
-  // Use transaction value, not LTV, for lost appointments
-  const rawLoss = Math.round(preventableNoShows * transactionValue);
-  // Cap at 15% of monthly revenue
-  const monthlyLoss = capLoss(rawLoss, monthlyRevenue, 0.15);
-  const annualLoss = monthlyLoss * 12;
+  // Use transaction value (not LTV) for lost appointments
+  const rawLoss = preventableNoShows * transactionValue;
+  
+  // Cap at 6% of monthly revenue
+  const monthlyLoss = Math.min(rawLoss, monthlyRevenue * 0.06);
 
   return {
     rank: 0,
     type: "noShow",
     label: "Appointment No-Shows",
-    monthlyLoss,
-    annualLoss,
-    severity: getSeverity(monthlyLoss),
+    monthlyLoss: Math.round(monthlyLoss),
+    annualLoss: Math.round(monthlyLoss * 12),
+    severity: getSeverityByPercent(monthlyLoss / monthlyRevenue),
     details: {
       appointmentsBooked,
       noShows,
-      noShowRate: `${(noShowRate * 100).toFixed(1)}%`,
       preventableNoShows: Math.round(preventableNoShows),
       sendsReminders: sendsReminders ? "Yes" : "No",
     },
     recommendation: !sendsReminders
-      ? "Implement automated SMS and email reminders 48hr and 24hr before appointments. This alone can reduce no-shows by 50%."
-      : noShowRate > 0.15
-        ? "Consider requiring deposits or implementing a cancellation policy to reduce no-shows further."
-        : "Your no-show rate is reasonable. Focus on other areas for bigger wins.",
+      ? "Implement automated SMS and email reminders 48hr and 24hr before appointments."
+      : "Consider requiring deposits to reduce no-shows further.",
   };
 }
 
-// 5. Unqualified Lead Leak
+// 5. UNQUALIFIED LEADS - Wasted time (opportunity cost, use transaction value)
 export function calculateUnqualifiedLeadLeak(data: CalculatorFormData): Leak {
   const qualifiesLeads = data.qualifiesLeads;
   
@@ -345,11 +329,8 @@ export function calculateUnqualifiedLeadLeak(data: CalculatorFormData): Leak {
       monthlyLoss: 0,
       annualLoss: 0,
       severity: "low",
-      details: {
-        qualifiesLeads: true,
-        reason: "Lead qualification is already in place",
-      },
-      recommendation: "Good job! Your lead qualification process helps focus sales efforts.",
+      details: { qualifiesLeads: true },
+      recommendation: "Your lead qualification process is in place.",
     };
   }
 
@@ -357,41 +338,34 @@ export function calculateUnqualifiedLeadLeak(data: CalculatorFormData): Leak {
   const percentageUnqualified = data.percentageUnqualified || 20;
   const consultationLength = data.consultationLength || 30;
   const avgHourlyCost = data.avgHourlyLaborCost || 25;
-  const closeRate = getCloseRate(data);
-  const avgTransaction = data.avgTransactionValue || 0;
+  const monthlyRevenue = getMonthlyRevenue(data);
 
   const unqualifiedLeads = totalLeads * (percentageUnqualified / 100);
   const hoursWasted = (unqualifiedLeads * consultationLength) / 60;
   
-  // Direct labor cost
-  const laborCost = hoursWasted * avgHourlyCost;
+  // Direct labor cost only (no opportunity cost to avoid inflation)
+  const rawLoss = hoursWasted * avgHourlyCost;
   
-  // Opportunity cost: those hours could have been spent on qualified leads
-  const potentialDeals = (hoursWasted / (consultationLength / 60)) * closeRate;
-  const opportunityCost = potentialDeals * avgTransaction;
-
-  const monthlyLoss = Math.round(laborCost + opportunityCost);
-  const annualLoss = monthlyLoss * 12;
+  // Cap at 3% of monthly revenue
+  const monthlyLoss = Math.min(rawLoss, monthlyRevenue * 0.03);
 
   return {
     rank: 0,
     type: "unqualifiedLeads",
     label: "Unqualified Lead Time",
-    monthlyLoss,
-    annualLoss,
-    severity: getSeverity(monthlyLoss),
+    monthlyLoss: Math.round(monthlyLoss),
+    annualLoss: Math.round(monthlyLoss * 12),
+    severity: getSeverityByPercent(monthlyLoss / monthlyRevenue),
     details: {
       unqualifiedLeadsPerMonth: Math.round(unqualifiedLeads),
       hoursWastedPerMonth: hoursWasted.toFixed(1),
-      laborCost: Math.round(laborCost),
-      opportunityCost: Math.round(opportunityCost),
-      percentageUnqualified: `${percentageUnqualified}%`,
+      laborCost: Math.round(rawLoss),
     },
-    recommendation: "Add a brief qualification step before booking consultations. A simple online form or 5-minute screening call can filter out poor-fit leads.",
+    recommendation: "Add a brief qualification step before booking consultations.",
   };
 }
 
-// 6. After-Hours Leak - Uses LTV (lost leads/inquiries)
+// 6. AFTER-HOURS - Lost leads from no coverage (use LTV)
 export function calculateAfterHoursLeak(data: CalculatorFormData): Leak {
   const inboundCalls = data.inboundCalls || 0;
   const answersAfterHours = data.answersAfterHours;
@@ -400,56 +374,36 @@ export function calculateAfterHoursLeak(data: CalculatorFormData): Leak {
   const ltv = getLTV(data);
   const monthlyRevenue = getMonthlyRevenue(data);
 
-  // Industry averages: 30% of calls come after hours, 25% on weekends
-  const afterHoursRate = 0.30;
-  const weekendRate = 0.25;
+  // Industry averages: 25% after hours, 15% weekends (some overlap)
+  let missedRate = 0;
+  if (!answersAfterHours) missedRate += 0.20;
+  if (!answersWeekends) missedRate += 0.10;
 
-  let missedAfterHours = 0;
-  let missedWeekends = 0;
-
-  if (!answersAfterHours) {
-    missedAfterHours = inboundCalls * afterHoursRate;
-  }
+  const missedCalls = inboundCalls * missedRate;
+  const rawLoss = missedCalls * closeRate * ltv;
   
-  if (!answersWeekends) {
-    // Don't double-count if both are missed (assume some overlap)
-    const weekendOnlyRate = answersAfterHours ? weekendRate : weekendRate * 0.7;
-    missedWeekends = inboundCalls * weekendOnlyRate;
-  }
-
-  const totalMissed = missedAfterHours + missedWeekends;
-  const lostDeals = totalMissed * closeRate;
-  const rawLoss = Math.round(lostDeals * ltv);
-  // Cap at 25% of monthly revenue (after-hours can be significant but not this large)
-  const monthlyLoss = capLoss(rawLoss, monthlyRevenue, 0.25);
-  const annualLoss = monthlyLoss * 12;
+  // Cap at 6% of monthly revenue
+  const monthlyLoss = Math.min(rawLoss, monthlyRevenue * 0.06);
 
   return {
     rank: 0,
     type: "afterHours",
     label: "After-Hours & Weekend Calls",
-    monthlyLoss,
-    annualLoss,
-    severity: getSeverity(monthlyLoss),
+    monthlyLoss: Math.round(monthlyLoss),
+    annualLoss: Math.round(monthlyLoss * 12),
+    severity: getSeverityByPercent(monthlyLoss / monthlyRevenue),
     details: {
-      missedAfterHoursCalls: Math.round(missedAfterHours),
-      missedWeekendCalls: Math.round(missedWeekends),
-      totalMissedCalls: Math.round(totalMissed),
+      missedCallsAfterHours: Math.round(missedCalls),
       answersAfterHours: answersAfterHours ? "Yes" : "No",
       answersWeekends: answersWeekends ? "Yes" : "No",
-      lostDeals: lostDeals.toFixed(1),
     },
-    recommendation: !answersAfterHours && !answersWeekends
-      ? "You're missing 55% of potential calls. An answering service or AI receptionist can capture these leads for a fraction of their value."
-      : !answersAfterHours
-        ? "After-hours calls represent 30% of inquiries. Consider an answering service for evenings."
-        : !answersWeekends
-          ? "Weekend calls are high-intent buyers. Add weekend coverage or an automated booking system."
-          : "Great job covering all hours! You're not leaving money on the table here.",
+    recommendation: missedRate > 0.20
+      ? "An answering service or AI receptionist can capture these leads."
+      : "Consider adding coverage for remaining gaps.",
   };
 }
 
-// 7. Hold Time Leak - Uses LTV (lost leads)
+// 7. HOLD TIME - Lost leads from hang-ups (use LTV)
 export function calculateHoldTimeLeak(data: CalculatorFormData): Leak {
   const inboundCalls = data.inboundCalls || 0;
   const avgHoldTime = data.avgHoldTime || 0;
@@ -457,101 +411,84 @@ export function calculateHoldTimeLeak(data: CalculatorFormData): Leak {
   const ltv = getLTV(data);
   const monthlyRevenue = getMonthlyRevenue(data);
 
-  // Every minute of hold time = ~10% hang-up rate (capped at 90%)
-  const hangUpRate = Math.min(avgHoldTime * 0.10, 0.90);
+  // 8% hang-up rate per minute of hold (capped at 60%)
+  const hangUpRate = Math.min(avgHoldTime * 0.08, 0.60);
   const callsAbandoned = inboundCalls * hangUpRate;
-  const lostDeals = callsAbandoned * closeRate;
-  const rawLoss = Math.round(lostDeals * ltv);
-  // Cap at 15% of monthly revenue
-  const monthlyLoss = capLoss(rawLoss, monthlyRevenue, 0.15);
-  const annualLoss = monthlyLoss * 12;
+  const rawLoss = callsAbandoned * closeRate * ltv;
+  
+  // Cap at 4% of monthly revenue
+  const monthlyLoss = Math.min(rawLoss, monthlyRevenue * 0.04);
 
   return {
     rank: 0,
     type: "holdTime",
     label: "Long Hold Times",
-    monthlyLoss,
-    annualLoss,
-    severity: getSeverity(monthlyLoss),
+    monthlyLoss: Math.round(monthlyLoss),
+    annualLoss: Math.round(monthlyLoss * 12),
+    severity: getSeverityByPercent(monthlyLoss / monthlyRevenue),
     details: {
       avgHoldTimeMinutes: avgHoldTime,
       estimatedHangUpRate: `${(hangUpRate * 100).toFixed(0)}%`,
       callsAbandonedPerMonth: Math.round(callsAbandoned),
-      lostDeals: lostDeals.toFixed(1),
     },
     recommendation: avgHoldTime > 2
-      ? "Long hold times frustrate callers. Consider hiring additional staff, implementing a callback system, or using an AI assistant to handle initial inquiries."
-      : "Your hold times are acceptable. Focus on other areas with bigger impact.",
+      ? "Consider a callback system or AI assistant for initial inquiries."
+      : "Your hold times are acceptable.",
   };
 }
 
-// ============================================
-// REACTIVATION LEAK CALCULATIONS
-// ============================================
+// =====================================================
+// REACTIVATION CALCULATIONS
+// =====================================================
 
-// Viability rates by database age (industry research)
 const DATABASE_VIABILITY_RATES: Record<string, number> = {
-  "0-3months": 0.45,
-  "3-6months": 0.35,
-  "6-12months": 0.25,
-  "1-2years": 0.15,
-  "2+years": 0.08,
-};
-
-// Win-back rates by recency (industry benchmarks)
-const WIN_BACK_RATES: Record<string, number> = {
-  "3-6months": 0.28,
+  "0-3months": 0.40,
+  "3-6months": 0.30,
   "6-12months": 0.20,
   "1-2years": 0.12,
   "2+years": 0.06,
 };
 
-// Frequency impact on success
-const FREQUENCY_MULTIPLIERS: Record<string, number> = {
-  "monthly": 1.0,
-  "quarterly": 0.85,
-  "twice-a-year": 0.70,
-  "once-a-year": 0.50,
-  "rarely": 0.30,
+const WIN_BACK_RATES: Record<string, number> = {
+  "3-6months": 0.22,
+  "6-12months": 0.15,
+  "1-2years": 0.10,
+  "2+years": 0.05,
 };
 
-// FUNCTION 1: Calculate Dormant Leads Value
 export function calculateDormantLeadsValue(data: CalculatorFormData): DormantLeadsResult {
   const totalDormantLeads = data.totalDormantLeads || 0;
   const databaseAge = data.databaseAge || "6-12months";
   const everRecontactedDormant = data.everRecontactedDormant || false;
   const percentageRecontactedDormant = data.percentageRecontactedDormant || 0;
   const dormantResponseCount = data.dormantResponseCount || 0;
-  const closeRate = getCloseRate(data) * 100; // Convert to percentage
-  const customerLifetimeValue = getLTV(data);
+  const closeRate = getCloseRate(data);
+  const ltv = getLTV(data);
 
-  const viabilityRate = DATABASE_VIABILITY_RATES[databaseAge] || 0.25;
+  const viabilityRate = DATABASE_VIABILITY_RATES[databaseAge] || 0.20;
   const viableLeads = totalDormantLeads * viabilityRate;
 
-  // Reactivation campaigns typically have 15-30% response rate
-  const reactivationResponseRate = 0.22; // 22% industry average
-  const bestInClassResponseRate = 0.35; // 35% with proper system
+  // Reactivation response rate: 18% average
+  const reactivationResponseRate = 0.18;
+  const bestInClassResponseRate = 0.30;
 
-  // Expected customers from reactivation
-  const expectedCustomers = viableLeads * reactivationResponseRate * (closeRate / 100);
-  const bestCaseCustomers = viableLeads * bestInClassResponseRate * (closeRate / 100);
+  const expectedCustomers = viableLeads * reactivationResponseRate * closeRate;
+  const bestCaseCustomers = viableLeads * bestInClassResponseRate * closeRate;
 
-  // Calculate current gap
   let customersLost: number;
   let currentlyRecovered = 0;
 
   if (!everRecontactedDormant) {
-    // Never contacted = losing 100% of opportunity
     customersLost = expectedCustomers;
   } else {
-    // They did some outreach, calculate what they're missing
-    const leadsRecontacted = totalDormantLeads * (percentageRecontactedDormant / 100);
     currentlyRecovered = dormantResponseCount;
     customersLost = Math.max(0, expectedCustomers - currentlyRecovered);
   }
 
-  const monthlyLoss = customersLost * customerLifetimeValue;
-  const bestCaseRevenue = bestCaseCustomers * customerLifetimeValue;
+  // Use single transaction value for dormant leads (they're not proven repeat customers yet)
+  const avgTransaction = data.avgTransactionValue || 0;
+  const monthlyLoss = customersLost * avgTransaction;
+  const bestCaseRevenue = bestCaseCustomers * avgTransaction;
 
   return {
     monthlyLoss: Math.round(monthlyLoss),
@@ -560,19 +497,18 @@ export function calculateDormantLeadsValue(data: CalculatorFormData): DormantLea
     expectedCustomers: Math.round(expectedCustomers),
     bestCaseCustomers: Math.round(bestCaseCustomers),
     customersLost: Math.round(customersLost),
-    currentlyRecovered: currentlyRecovered,
-    databaseAge: databaseAge,
+    currentlyRecovered,
+    databaseAge,
     viabilityRate: Math.round(viabilityRate * 100),
-    expectedResponseRate: 22,
-    bestCaseResponseRate: 35,
+    expectedResponseRate: 18,
+    bestCaseResponseRate: 30,
     recontactStatus: everRecontactedDormant
       ? `Reached ${percentageRecontactedDormant}% of database`
       : "Never contacted",
-    upside: Math.round(bestCaseRevenue - (currentlyRecovered * customerLifetimeValue)),
+    upside: Math.round(bestCaseRevenue - (currentlyRecovered * avgTransaction)),
   };
 }
 
-// FUNCTION 2: Calculate Past Customer Value
 export function calculatePastCustomerValue(data: CalculatorFormData): PastCustomersResult {
   const numPastCustomers = data.numPastCustomers || 0;
   const avgTimeSinceLastPurchase = data.avgTimeSinceLastPurchase || "6-12months";
@@ -581,21 +517,18 @@ export function calculatePastCustomerValue(data: CalculatorFormData): PastCustom
   const reengagementResponseRate = data.reengagementResponseRate || 0;
   const avgTransactionValue = data.avgTransactionValue || 0;
 
-  const winBackRate = WIN_BACK_RATES[avgTimeSinceLastPurchase] || 0.20;
+  const winBackRate = WIN_BACK_RATES[avgTimeSinceLastPurchase] || 0.15;
   const winnableCustomers = numPastCustomers * winBackRate;
 
-  // Past customers typically spend 30% more on return (established trust)
-  const returnPurchaseValue = avgTransactionValue * 1.3;
+  // Past customers spend 20% more on return (established trust)
+  const returnPurchaseValue = avgTransactionValue * 1.2;
 
-  // Calculate gap
   let customersLost: number;
   let currentlyRecovered = 0;
 
   if (!sendsReengagementCampaigns) {
-    // No campaigns = losing 100% of opportunity
     customersLost = winnableCustomers;
   } else {
-    // They're doing something, calculate gap
     currentlyRecovered = numPastCustomers * (reengagementResponseRate / 100);
     customersLost = Math.max(0, winnableCustomers - currentlyRecovered);
   }
@@ -603,9 +536,10 @@ export function calculatePastCustomerValue(data: CalculatorFormData): PastCustom
   const monthlyLoss = customersLost * returnPurchaseValue;
   const bestCaseRevenue = winnableCustomers * returnPurchaseValue;
 
-  const frequencyImpact = sendsReengagementCampaigns
-    ? FREQUENCY_MULTIPLIERS[reengagementFrequency] || 0.30
-    : 0;
+  const frequencyMultipliers: Record<string, number> = {
+    "monthly": 1.0, "quarterly": 0.85, "twice-a-year": 0.70, "once-a-year": 0.50, "rarely": 0.30,
+  };
+  const frequencyImpact = sendsReengagementCampaigns ? frequencyMultipliers[reengagementFrequency] || 0.30 : 0;
 
   return {
     monthlyLoss: Math.round(monthlyLoss),
@@ -615,7 +549,7 @@ export function calculatePastCustomerValue(data: CalculatorFormData): PastCustom
     currentlyRecovered: Math.round(currentlyRecovered),
     timeSinceLastPurchase: avgTimeSinceLastPurchase,
     winBackRate: Math.round(winBackRate * 100),
-    returnPurchaseBonus: 30,
+    returnPurchaseBonus: 20,
     currentStatus: sendsReengagementCampaigns
       ? `${reengagementFrequency} campaigns reaching ${reengagementResponseRate}%`
       : "No reactivation campaigns",
@@ -625,45 +559,42 @@ export function calculatePastCustomerValue(data: CalculatorFormData): PastCustom
   };
 }
 
-// FUNCTION 3: Calculate Reactivation Leak (master function)
 export function calculateReactivationLeak(data: CalculatorFormData): ReactivationLeak | null {
   const hasDormantLeads = data.hasDormantLeads === true;
   const hasPastCustomers = data.hasPastCustomers === true;
 
-  // If no reactivation data, return null
-  if (!hasDormantLeads && !hasPastCustomers) {
-    return null;
-  }
+  if (!hasDormantLeads && !hasPastCustomers) return null;
 
   const dormantLeads = hasDormantLeads ? calculateDormantLeadsValue(data) : null;
   const pastCustomers = hasPastCustomers ? calculatePastCustomerValue(data) : null;
+  const monthlyRevenue = getMonthlyRevenue(data);
 
-  const totalMonthlyLoss =
-    (dormantLeads?.monthlyLoss || 0) + (pastCustomers?.monthlyLoss || 0);
+  let totalMonthlyLoss = (dormantLeads?.monthlyLoss || 0) + (pastCustomers?.monthlyLoss || 0);
+  
+  // Cap reactivation at 10% of monthly revenue
+  totalMonthlyLoss = Math.min(totalMonthlyLoss, monthlyRevenue * 0.10);
 
-  const totalUpside =
-    (dormantLeads?.upside || 0) + (pastCustomers?.upside || 0);
+  const totalUpside = (dormantLeads?.upside || 0) + (pastCustomers?.upside || 0);
 
-  // Calculate quick-win score (higher = easier money)
   let quickWinScore = 0;
-  if (dormantLeads && dormantLeads.viabilityRate > 25) quickWinScore += 30;
-  if (pastCustomers && pastCustomers.winBackRate > 15) quickWinScore += 30;
+  if (dormantLeads && dormantLeads.viabilityRate > 20) quickWinScore += 30;
+  if (pastCustomers && pastCustomers.winBackRate > 12) quickWinScore += 30;
   if (dormantLeads && !data.everRecontactedDormant) quickWinScore += 20;
   if (pastCustomers && !data.sendsReengagementCampaigns) quickWinScore += 20;
 
   const severity: "critical" | "high" | "medium" | "low" =
-    totalMonthlyLoss > 20000 ? "critical" : totalMonthlyLoss > 10000 ? "high" : "medium";
+    totalMonthlyLoss > 8000 ? "critical" : totalMonthlyLoss > 4000 ? "high" : "medium";
 
   return {
     type: "reactivation",
     label: "Dormant Leads & Customer Reactivation",
-    monthlyLoss: totalMonthlyLoss,
-    annualLoss: totalMonthlyLoss * 12,
-    dormantLeads: dormantLeads,
-    pastCustomers: pastCustomers,
-    severity: severity,
-    quickWinScore: quickWinScore, // 0-100 scale
-    totalUpside: totalUpside,
+    monthlyLoss: Math.round(totalMonthlyLoss),
+    annualLoss: Math.round(totalMonthlyLoss * 12),
+    dormantLeads,
+    pastCustomers,
+    severity,
+    quickWinScore,
+    totalUpside: Math.round(totalUpside),
     implementationTime: "7-14 days",
     expectedROI: "3-5x in first 30 days",
     paybackPeriod: "7-10 days",
@@ -671,15 +602,15 @@ export function calculateReactivationLeak(data: CalculatorFormData): Reactivatio
   };
 }
 
-// Main calculation function
-export function calculateAllLeaks(formData: CalculatorFormData): CalculationResult {
-  // Check for reactivation data
-  const hasReactivationData = formData.hasDormantLeads === true || formData.hasPastCustomers === true;
-  
-  // Calculate reactivation leak first (if applicable)
-  const reactivationOpportunity = calculateReactivationLeak(formData);
+// =====================================================
+// MAIN CALCULATION FUNCTION
+// =====================================================
 
-  // Calculate all operational leaks
+export function calculateAllLeaks(formData: CalculatorFormData): CalculationResult {
+  const hasReactivationData = formData.hasDormantLeads === true || formData.hasPastCustomers === true;
+  const reactivationOpportunity = calculateReactivationLeak(formData);
+  const monthlyRevenue = getMonthlyRevenue(formData);
+
   const operationalLeaks: Leak[] = [
     calculateMissedCallsLeak(formData),
     calculateSlowResponseLeak(formData),
@@ -690,20 +621,17 @@ export function calculateAllLeaks(formData: CalculatorFormData): CalculationResu
     calculateHoldTimeLeak(formData),
   ];
 
-  // Sort operational leaks by monthly loss (descending)
   operationalLeaks.sort((a, b) => b.monthlyLoss - a.monthlyLoss);
 
-  // Assign ranks to operational leaks (starting from 2 if reactivation exists)
   const rankOffset = reactivationOpportunity ? 1 : 0;
   operationalLeaks.forEach((leak, index) => {
     leak.rank = index + 1 + rankOffset;
   });
 
-  // Create reactivation as a Leak for the allLeaks array
   let reactivationAsLeak: Leak | null = null;
   if (reactivationOpportunity) {
     reactivationAsLeak = {
-      rank: 1, // Always first
+      rank: 1,
       type: "reactivation",
       label: reactivationOpportunity.label,
       monthlyLoss: reactivationOpportunity.monthlyLoss,
@@ -714,48 +642,35 @@ export function calculateAllLeaks(formData: CalculatorFormData): CalculationResu
         dormantLeadsValue: reactivationOpportunity.dormantLeads?.monthlyLoss || 0,
         pastCustomersValue: reactivationOpportunity.pastCustomers?.monthlyLoss || 0,
         quickWinScore: reactivationOpportunity.quickWinScore,
-        totalUpside: reactivationOpportunity.totalUpside,
-        implementationTime: reactivationOpportunity.implementationTime,
-        expectedROI: reactivationOpportunity.expectedROI,
       },
-      recommendation: reactivationOpportunity.quickWinScore > 50
-        ? "This is your BIGGEST quick-win opportunity. A simple email/SMS campaign to dormant leads can generate revenue within days."
-        : "Reactivating past leads and customers is low-hanging fruit. Start with a simple 'We miss you' campaign.",
+      recommendation: "A simple email/SMS campaign to dormant leads can generate revenue within days.",
     };
   }
 
-  // Combine all leaks with reactivation first
   let allLeaks: Leak[] = reactivationAsLeak
     ? [reactivationAsLeak, ...operationalLeaks]
     : operationalLeaks;
 
-  // Calculate raw totals
+  // Calculate total
   let totalMonthlyLoss = allLeaks.reduce((sum, leak) => sum + leak.monthlyLoss, 0);
   
-  // TOTAL LOSS CAP: Never exceed 80% of monthly revenue
-  const monthlyRevenue = formData.monthlyRevenue || 1;
-  const maxTotalLoss = monthlyRevenue * 0.80;
+  // GLOBAL CAP: Total loss cannot exceed 45% of monthly revenue
+  const maxTotalLoss = monthlyRevenue * 0.45;
   
   if (totalMonthlyLoss > maxTotalLoss) {
-    // Proportionally reduce each leak
     const reductionFactor = maxTotalLoss / totalMonthlyLoss;
     allLeaks = allLeaks.map(leak => ({
       ...leak,
       monthlyLoss: Math.round(leak.monthlyLoss * reductionFactor),
       annualLoss: Math.round(leak.monthlyLoss * reductionFactor * 12),
     }));
-    totalMonthlyLoss = maxTotalLoss;
+    totalMonthlyLoss = Math.round(maxTotalLoss);
   }
-  
-  const totalAnnualLoss = totalMonthlyLoss * 12;
-
-  // Legacy leaks array (for backwards compatibility) - same as allLeaks
-  const leaks = allLeaks;
 
   return {
     totalMonthlyLoss: Math.round(totalMonthlyLoss),
-    totalAnnualLoss: Math.round(totalAnnualLoss),
-    leaks,
+    totalAnnualLoss: Math.round(totalMonthlyLoss * 12),
+    leaks: allLeaks,
     reactivationOpportunity,
     operationalLeaks,
     allLeaks,
@@ -763,7 +678,10 @@ export function calculateAllLeaks(formData: CalculatorFormData): CalculationResu
   };
 }
 
-// Helper function to format currency
+// =====================================================
+// HELPER FUNCTIONS
+// =====================================================
+
 export function formatCurrency(value: number): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -773,7 +691,6 @@ export function formatCurrency(value: number): string {
   }).format(value);
 }
 
-// Helper function to get severity color
 export function getSeverityColor(severity: Leak["severity"]): {
   bg: string;
   text: string;
@@ -791,16 +708,11 @@ export function getSeverityColor(severity: Leak["severity"]): {
   }
 }
 
-// Helper function to get severity label
 export function getSeverityLabel(severity: Leak["severity"]): string {
   switch (severity) {
-    case "critical":
-      return "Critical";
-    case "high":
-      return "High Priority";
-    case "medium":
-      return "Medium Priority";
-    case "low":
-      return "Low Priority";
+    case "critical": return "Critical";
+    case "high": return "High Priority";
+    case "medium": return "Medium Priority";
+    case "low": return "Low Priority";
   }
 }
