@@ -7,9 +7,9 @@ export default {
   theme: {
     container: {
       center: true,
-      padding: "2rem",
+      padding: "1.5rem",
       screens: {
-        "2xl": "1400px",
+        "2xl": "1280px",
       },
     },
     extend: {
@@ -73,6 +73,7 @@ export default {
         },
       },
       borderRadius: {
+        "3xl": "1.5rem",
         "2xl": "1rem",
         xl: "0.75rem",
         lg: "var(--radius)",
@@ -84,12 +85,22 @@ export default {
         mono: ["JetBrains Mono", "SF Mono", "monospace"],
       },
       fontSize: {
-        "display-xl": ["4.5rem", { lineHeight: "1.1", letterSpacing: "-0.02em" }],
-        "display-lg": ["3.75rem", { lineHeight: "1.1", letterSpacing: "-0.02em" }],
-        "display": ["3rem", { lineHeight: "1.1", letterSpacing: "-0.02em" }],
-        "heading-xl": ["2.25rem", { lineHeight: "1.2", letterSpacing: "-0.02em" }],
-        "heading-lg": ["1.875rem", { lineHeight: "1.25", letterSpacing: "-0.01em" }],
-        "heading": ["1.5rem", { lineHeight: "1.3", letterSpacing: "-0.01em" }],
+        "hero": ["7.5rem", { lineHeight: "1", letterSpacing: "-0.03em", fontWeight: "900" }],
+        "hero-mobile": ["3.5rem", { lineHeight: "1", letterSpacing: "-0.03em", fontWeight: "900" }],
+        "display-xl": ["4.5rem", { lineHeight: "1.05", letterSpacing: "-0.02em" }],
+        "display-lg": ["3.5rem", { lineHeight: "1.1", letterSpacing: "-0.02em" }],
+        "display": ["2.5rem", { lineHeight: "1.1", letterSpacing: "-0.02em" }],
+        "heading-xl": ["2rem", { lineHeight: "1.2", letterSpacing: "-0.02em" }],
+        "heading-lg": ["1.5rem", { lineHeight: "1.25", letterSpacing: "-0.01em" }],
+        "heading": ["1.25rem", { lineHeight: "1.3", letterSpacing: "-0.01em" }],
+        "body-lg": ["1.125rem", { lineHeight: "1.6" }],
+        "body": ["1rem", { lineHeight: "1.6" }],
+        "body-sm": ["0.875rem", { lineHeight: "1.5" }],
+        "caption": ["0.75rem", { lineHeight: "1.4" }],
+      },
+      spacing: {
+        "18": "4.5rem",
+        "22": "5.5rem",
       },
       keyframes: {
         "accordion-down": {
@@ -105,7 +116,7 @@ export default {
           to: { opacity: "1", transform: "translateY(0)" },
         },
         "fade-in-up": {
-          from: { opacity: "0", transform: "translateY(20px)" },
+          from: { opacity: "0", transform: "translateY(30px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
         "slide-in-left": {
@@ -116,19 +127,28 @@ export default {
           from: { opacity: "0", transform: "scale(0.95)" },
           to: { opacity: "1", transform: "scale(1)" },
         },
+        "pulse-glow": {
+          "0%, 100%": { opacity: "0.6" },
+          "50%": { opacity: "1" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-in": "fade-in 0.4s ease-out",
-        "fade-in-up": "fade-in-up 0.5s ease-out",
+        "fade-in-up": "fade-in-up 0.6s ease-out forwards",
         "slide-in-left": "slide-in-left 0.4s ease-out",
         "scale-in": "scale-in 0.3s ease-out",
+        "pulse-glow": "pulse-glow 3s ease-in-out infinite",
       },
       boxShadow: {
-        "inner-glow": "inset 0 1px 0 0 hsl(0 0% 100% / 0.05)",
+        "glow-sm": "0 0 20px -5px hsl(var(--primary) / 0.3)",
+        "glow-md": "0 0 40px -10px hsl(var(--primary) / 0.4)",
+        "glow-lg": "0 0 60px -15px hsl(var(--primary) / 0.5)",
+        "glow-destructive": "0 0 80px -20px hsl(var(--destructive) / 0.6)",
         "depth": "0 1px 2px 0 hsl(0 0% 0% / 0.3), 0 4px 8px -2px hsl(0 0% 0% / 0.4)",
         "depth-lg": "0 4px 6px -1px hsl(0 0% 0% / 0.3), 0 12px 24px -4px hsl(0 0% 0% / 0.5)",
+        "depth-xl": "0 8px 16px -4px hsl(0 0% 0% / 0.3), 0 24px 48px -8px hsl(0 0% 0% / 0.6)",
       },
     },
   },
