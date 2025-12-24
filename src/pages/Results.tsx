@@ -8,6 +8,7 @@ import { CalculatorFormData } from "@/hooks/useCalculatorForm";
 import { toast } from "sonner";
 import { CalendlyModal } from "@/components/CalendlyModal";
 import { HeroSection } from "@/components/results/HeroSection";
+import { ConstraintSummaryCard } from "@/components/results/ConstraintSummaryCard";
 import { QuickWinCard } from "@/components/results/QuickWinCard";
 import { LeakBreakdownGrid } from "@/components/results/LeakBreakdownGrid";
 import { StrategyCallTimeline } from "@/components/results/StrategyCallTimeline";
@@ -112,6 +113,15 @@ export default function Results() {
           annualLossRange={results.totalAnnualLossRange}
           onBookCall={() => setIsCalendlyOpen(true)}
         />
+
+        {/* Primary Constraint Summary Card - Above everything */}
+        {results.leaks.length > 0 && (
+          <section className="py-8 lg:py-12 px-4 sm:px-6">
+            <div className="max-w-3xl mx-auto">
+              <ConstraintSummaryCard primaryConstraint={results.leaks[0]} />
+            </div>
+          </section>
+        )}
 
         {/* Quick Win - Reactivation */}
         {results.reactivationOpportunity && results.reactivationOpportunity.monthlyLoss > 0 && (
