@@ -9,35 +9,34 @@ interface LeakCardProps {
   onViewSolution: () => void;
 }
 
-const SEVERITY_CONFIG = {
-  critical: {
-    bg: "bg-destructive/10",
-    border: "border-destructive/30",
-    text: "text-destructive",
-    badge: "bg-destructive text-destructive-foreground",
-    glow: "shadow-[0_0_40px_-15px_hsl(var(--destructive))]",
-  },
-  high: {
-    bg: "bg-orange-500/10",
-    border: "border-orange-500/30",
-    text: "text-orange-400",
-    badge: "bg-orange-500 text-white",
-    glow: "shadow-[0_0_30px_-15px_hsl(25_95%_53%)]",
-  },
-  medium: {
-    bg: "bg-warning/10",
-    border: "border-warning/30",
-    text: "text-warning",
-    badge: "bg-warning text-warning-foreground",
+// Rank-based styling: #1 = red, #2 = yellow, rest = muted gray
+const getRankConfig = (rank: number) => {
+  if (rank === 1) {
+    return {
+      bg: "bg-destructive/10",
+      border: "border-destructive/30",
+      text: "text-destructive",
+      badge: "bg-destructive text-destructive-foreground",
+      glow: "shadow-[0_0_40px_-15px_hsl(var(--destructive))]",
+    };
+  }
+  if (rank === 2) {
+    return {
+      bg: "bg-warning/10",
+      border: "border-warning/30",
+      text: "text-warning",
+      badge: "bg-warning text-warning-foreground",
+      glow: "shadow-[0_0_30px_-15px_hsl(var(--warning))]",
+    };
+  }
+  // Everything else is muted gray
+  return {
+    bg: "bg-muted/30",
+    border: "border-border",
+    text: "text-muted-foreground",
+    badge: "bg-muted text-muted-foreground",
     glow: "",
-  },
-  low: {
-    bg: "bg-success/10",
-    border: "border-success/30",
-    text: "text-success",
-    badge: "bg-success text-success-foreground",
-    glow: "",
-  },
+  };
 };
 
 const LEAK_ICONS: Record<string, typeof Phone> = {
@@ -100,7 +99,8 @@ const LEAK_FIXES: Record<string, { time: string; roi: string }> = {
 };
 
 export function LeakCard({ leak, rank, totalLoss, onViewSolution }: LeakCardProps) {
-  const severity = SEVERITY_CONFIG[leak.severity as keyof typeof SEVERITY_CONFIG];
+  // Use rank-based coloring instead of severity
+  const rankConfig = getRankConfig(rank);
   const Icon = LEAK_ICONS[leak.type] || AlertCircle;
   const problems = LEAK_PROBLEMS[leak.type] || [];
   const fix = LEAK_FIXES[leak.type] || { time: "14d", roi: "5x" };
@@ -113,11 +113,11 @@ export function LeakCard({ leak, rank, totalLoss, onViewSolution }: LeakCardProp
       viewport={{ once: true, margin: "-50px" }}
       whileHover={{ y: -4 }}
       transition={{ duration: 0.3 }}
-      className={`relative overflow-hidden rounded-2xl bg-card border ${severity.border} ${severity.glow} transition-all duration-300`}
+      className={`relative overflow-hidden rounded-2xl bg-card border ${rankConfig.border} ${rankConfig.glow} transition-all duration-300`}
     >
       {/* Constraint label badge - top right */}
       <div className="absolute top-4 right-4">
-        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${severity.badge}`}>
+        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${rankConfig.badge}`}>
           {leak.constraintLabel || (leak.severity.charAt(0).toUpperCase() + leak.severity.slice(1))}
         </span>
       </div>
@@ -131,8 +131,8 @@ export function LeakCard({ leak, rank, totalLoss, onViewSolution }: LeakCardProp
 
       <div className="pt-16 p-6">
         {/* Icon */}
-        <div className={`w-12 h-12 rounded-xl ${severity.bg} border ${severity.border} flex items-center justify-center mb-4`}>
-          <Icon className={`w-6 h-6 ${severity.text}`} />
+        <div className={`w-12 h-12 rounded-xl ${rankConfig.bg} border ${rankConfig.border} flex items-center justify-center mb-4`}>
+          <Icon className={`w-6 h-6 ${rankConfig.text}`} />
         </div>
 
         {/* Title */}
@@ -143,7 +143,7 @@ export function LeakCard({ leak, rank, totalLoss, onViewSolution }: LeakCardProp
         {/* Loss amount - Now a range */}
         <div className="mb-4">
           <div className="flex items-baseline gap-1">
-            <span className={`text-2xl font-bold font-numeric ${severity.text}`}>
+            <span className={`text-2xl font-bold font-numeric ${rankConfig.text}`}>
               {formatCurrencyRangeCompact(leak.monthlyLossRange)}
             </span>
             <span className="text-sm text-muted-foreground">/mo</span>
@@ -173,7 +173,7 @@ export function LeakCard({ leak, rank, totalLoss, onViewSolution }: LeakCardProp
         <div className="space-y-2 mb-6">
           {problems.slice(0, 3).map((problem, i) => (
             <div key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-              <div className={`w-1 h-1 rounded-full ${severity.text.replace('text-', 'bg-')} mt-2 flex-shrink-0`} />
+              <div className={`w-1 h-1 rounded-full ${rankConfig.text.replace('text-', 'bg-')} mt-2 flex-shrink-0`} />
               <span>{problem}</span>
             </div>
           ))}
@@ -190,7 +190,7 @@ export function LeakCard({ leak, rank, totalLoss, onViewSolution }: LeakCardProp
         {/* CTA */}
         <button
           onClick={onViewSolution}
-          className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl ${severity.bg} ${severity.text} font-medium text-sm hover:opacity-80 transition-opacity`}
+          className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl ${rankConfig.bg} ${rankConfig.text} font-medium text-sm hover:opacity-80 transition-opacity`}
         >
           View Solution
           <ArrowRight className="w-4 h-4" />
