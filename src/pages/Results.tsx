@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { CalendlyModal } from "@/components/CalendlyModal";
 import { HeroSection } from "@/components/results/HeroSection";
 import { ConstraintSummaryCard } from "@/components/results/ConstraintSummaryCard";
+import { ScenarioToggle } from "@/components/results/ScenarioToggle";
+import { RecommendedIntervention } from "@/components/results/RecommendedIntervention";
 import { QuickWinCard } from "@/components/results/QuickWinCard";
 import { LeakBreakdownGrid } from "@/components/results/LeakBreakdownGrid";
 import { DoNothingCost } from "@/components/results/DoNothingCost";
@@ -75,6 +77,9 @@ export default function Results() {
 
   const { results, formData } = storedData;
 
+  // Find the missed calls leak for scenario toggle
+  const missedCallsLeak = results.leaks.find(leak => leak.type === "missed-calls" || leak.type === "after-hours");
+
   // Calculate recovery range (65% of loss range)
   const recoveryRange = {
     conservative: Math.round(results.totalMonthlyLossRange.conservative * 0.65),
@@ -88,7 +93,7 @@ export default function Results() {
       <header className="fixed top-0 left-0 right-0 z-50 glass-strong">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <div className="text-lg font-bold text-foreground tracking-tight">
-            LeakDetector
+            Revenue Diagnostics
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={handleDownloadPDF} className="text-muted-foreground hover:text-foreground">
@@ -118,8 +123,17 @@ export default function Results() {
         {/* Primary Constraint Summary Card - Above everything */}
         {results.leaks.length > 0 && (
           <section className="py-8 lg:py-12 px-4 sm:px-6">
-            <div className="max-w-3xl mx-auto">
+            <div className="max-w-3xl mx-auto space-y-6">
               <ConstraintSummaryCard primaryConstraint={results.leaks[0]} />
+              
+              {/* Scenario Toggle */}
+              <ScenarioToggle 
+                missedCallsLeak={missedCallsLeak}
+                totalMonthlyLoss={results.totalMonthlyLoss}
+              />
+              
+              {/* Recommended Intervention */}
+              <RecommendedIntervention primaryConstraint={results.leaks[0]} />
             </div>
           </section>
         )}
@@ -187,6 +201,13 @@ export default function Results() {
             </motion.div>
           </div>
         </section>
+
+        {/* Credibility anchor */}
+        <div className="text-center pb-4">
+          <p className="text-xs text-muted-foreground">
+            Built from patterns observed across 500+ service businesses
+          </p>
+        </div>
 
         {/* Methodology Drawer */}
         <MethodologyDrawer />
