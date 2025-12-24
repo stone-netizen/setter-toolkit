@@ -68,7 +68,7 @@ export const Step7Reactivation = ({ form }: StepProps) => {
       <div className="flex items-start gap-3 p-4 bg-amber-50 rounded-xl border border-amber-200">
         <Sparkles className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />
         <div>
-          <p className="text-sm font-semibold text-amber-800">This section often reveals the BIGGEST opportunity</p>
+          <p className="text-sm font-semibold text-amber-800">This section often reveals the primary constraint</p>
           <p className="text-sm text-amber-700 mt-1">
             Dormant leads and past customers are already familiar with you — they're much easier to convert.
           </p>
