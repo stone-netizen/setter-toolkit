@@ -32,6 +32,8 @@ export interface Leak {
   details: LeakDetails;
   recommendation: string;
   quickWin?: boolean;
+  constraintScore?: number;      // Weighted priority score
+  constraintLabel?: string;      // "Primary Constraint", etc.
 }
 
 // Dormant Leads Result
@@ -100,6 +102,37 @@ export interface CalculationResult {
   operationalLeaks: Leak[];
   allLeaks: Leak[];
   hasReactivationData: boolean;
+}
+
+// =====================================================
+// CONSTRAINT WEIGHTS - Diagnostic Priority System
+// =====================================================
+// These weights represent operational leverage - areas where
+// intervention has the highest ROI based on industry research.
+
+export const CONSTRAINT_WEIGHTS: Record<string, number> = {
+  "missed-calls": 0.35,       // Missed Calls / After Hours - 35%
+  "after-hours": 0.35,        // Combined with missed calls
+  "slow-response": 0.20,      // Response Time - 20%
+  "no-follow-up": 0.15,       // Follow-Up Depth - 15%
+  "no-show": 0.15,            // No-Shows - 15%
+  "reactivation": 0.10,       // Reactivation - 10%
+  "unqualified-leads": 0.05,  // CRM / Team - 5%
+  "hold-time": 0.05,          // Included in CRM/Team
+};
+
+// Calculate weighted constraint score
+export function calculateConstraintScore(leak: Leak): number {
+  const weight = CONSTRAINT_WEIGHTS[leak.type] || 0.05;
+  return leak.monthlyLoss * weight;
+}
+
+// Get constraint label based on score ranking
+export function getConstraintLabel(rank: number): string {
+  if (rank === 1) return "Primary Constraint";
+  if (rank === 2) return "Secondary Constraint";
+  if (rank === 3) return "Tertiary Constraint";
+  return "Contributing Factor";
 }
 
 // Response time conversion - percentage of leads lost due to slow response
@@ -681,11 +714,9 @@ export function calculateAllLeaks(formData: CalculatorFormData): CalculationResu
     calculateHoldTimeLeak(formData),
   ];
 
-  operationalLeaks.sort((a, b) => b.monthlyLoss - a.monthlyLoss);
-
-  const rankOffset = reactivationOpportunity ? 1 : 0;
-  operationalLeaks.forEach((leak, index) => {
-    leak.rank = index + 1 + rankOffset;
+  // Calculate constraint scores for each leak (revenue × weight)
+  operationalLeaks.forEach(leak => {
+    leak.constraintScore = calculateConstraintScore(leak);
   });
 
   let reactivationAsLeak: Leak | null = null;
@@ -706,12 +737,25 @@ export function calculateAllLeaks(formData: CalculatorFormData): CalculationResu
         quickWinScore: reactivationOpportunity.quickWinScore,
       },
       recommendation: "A simple email/SMS campaign to dormant leads can generate revenue within days.",
+      constraintScore: reactivationOpportunity.monthlyLoss * (CONSTRAINT_WEIGHTS["reactivation"] || 0.10),
     };
   }
 
   let allLeaks: Leak[] = reactivationAsLeak
     ? [reactivationAsLeak, ...operationalLeaks]
     : operationalLeaks;
+
+  // Sort by WEIGHTED constraint score (not raw dollar amount)
+  allLeaks.sort((a, b) => (b.constraintScore || 0) - (a.constraintScore || 0));
+
+  // Assign ranks and constraint labels based on weighted priority
+  allLeaks.forEach((leak, index) => {
+    leak.rank = index + 1;
+    leak.constraintLabel = getConstraintLabel(index + 1);
+  });
+
+  // Update operationalLeaks reference to match new ranking
+  const updatedOperationalLeaks = allLeaks.filter(l => l.type !== "reactivation");
 
   // Calculate total
   let totalMonthlyLoss = allLeaks.reduce((sum, leak) => sum + leak.monthlyLoss, 0);
@@ -723,12 +767,14 @@ export function calculateAllLeaks(formData: CalculatorFormData): CalculationResu
     const reductionFactor = maxTotalLoss / totalMonthlyLoss;
     allLeaks = allLeaks.map(leak => {
       const newMonthlyLoss = Math.round(leak.monthlyLoss * reductionFactor);
+      const newConstraintScore = newMonthlyLoss * (CONSTRAINT_WEIGHTS[leak.type] || 0.05);
       return {
         ...leak,
         monthlyLoss: newMonthlyLoss,
         annualLoss: newMonthlyLoss * 12,
         monthlyLossRange: createRange(newMonthlyLoss),
         annualLossRange: createRange(newMonthlyLoss * 12),
+        constraintScore: newConstraintScore,
       };
     });
     totalMonthlyLoss = Math.round(maxTotalLoss);
@@ -742,7 +788,7 @@ export function calculateAllLeaks(formData: CalculatorFormData): CalculationResu
     totalAnnualLossRange: createRange(roundedTotal * 12),
     leaks: allLeaks,
     reactivationOpportunity,
-    operationalLeaks,
+    operationalLeaks: allLeaks.filter(l => l.type !== "reactivation"),
     allLeaks,
     hasReactivationData,
   };

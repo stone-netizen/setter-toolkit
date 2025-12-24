@@ -115,10 +115,10 @@ export function LeakCard({ leak, rank, totalLoss, onViewSolution }: LeakCardProp
       transition={{ duration: 0.3 }}
       className={`relative overflow-hidden rounded-2xl bg-card border ${severity.border} ${severity.glow} transition-all duration-300`}
     >
-      {/* Severity badge - top right */}
+      {/* Constraint label badge - top right */}
       <div className="absolute top-4 right-4">
         <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${severity.badge}`}>
-          {leak.severity.charAt(0).toUpperCase() + leak.severity.slice(1)}
+          {leak.constraintLabel || (leak.severity.charAt(0).toUpperCase() + leak.severity.slice(1))}
         </span>
       </div>
 
