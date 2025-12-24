@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { ArrowRight, Zap, Phone, Clock, TrendingUp, Calendar, Target, AlertCircle } from "lucide-react";
-import { formatCurrency, Leak } from "@/utils/calculations";
+import { formatCurrencyRangeCompact, Leak } from "@/utils/calculations";
 
 interface LeakCardProps {
   leak: Leak;
@@ -140,16 +140,16 @@ export function LeakCard({ leak, rank, totalLoss, onViewSolution }: LeakCardProp
           {leak.label}
         </h3>
 
-        {/* Loss amount */}
+        {/* Loss amount - Now a range */}
         <div className="mb-4">
           <div className="flex items-baseline gap-1">
-            <span className={`text-3xl font-bold font-numeric ${severity.text}`}>
-              {formatCurrency(leak.monthlyLoss)}
+            <span className={`text-2xl font-bold font-numeric ${severity.text}`}>
+              {formatCurrencyRangeCompact(leak.monthlyLossRange)}
             </span>
             <span className="text-sm text-muted-foreground">/mo</span>
           </div>
           <p className="text-sm text-muted-foreground">
-            {formatCurrency(leak.monthlyLoss * 12)}/year
+            {formatCurrencyRangeCompact(leak.annualLossRange)}/year
           </p>
         </div>
 

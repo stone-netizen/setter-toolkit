@@ -1,5 +1,21 @@
 import { CalculatorFormData } from "@/hooks/useCalculatorForm";
 
+// Value range for confidence-adjusted estimates
+export interface ValueRange {
+  conservative: number;  // -30% of expected
+  expected: number;      // Base calculation
+  aggressive: number;    // +20% of expected
+}
+
+// Helper to create a range from a base value
+export function createRange(baseValue: number): ValueRange {
+  return {
+    conservative: Math.round(baseValue * 0.70),  // -30%
+    expected: Math.round(baseValue),
+    aggressive: Math.round(baseValue * 1.20),    // +20%
+  };
+}
+
 export interface LeakDetails {
   [key: string]: string | number | boolean | undefined;
 }
@@ -10,6 +26,8 @@ export interface Leak {
   label: string;
   monthlyLoss: number;
   annualLoss: number;
+  monthlyLossRange: ValueRange;
+  annualLossRange: ValueRange;
   severity: "critical" | "high" | "medium" | "low";
   details: LeakDetails;
   recommendation: string;
@@ -20,6 +38,8 @@ export interface Leak {
 export interface DormantLeadsResult {
   monthlyLoss: number;
   annualLoss: number;
+  monthlyLossRange: ValueRange;
+  annualLossRange: ValueRange;
   viableLeads: number;
   expectedCustomers: number;
   bestCaseCustomers: number;
@@ -37,6 +57,8 @@ export interface DormantLeadsResult {
 export interface PastCustomersResult {
   monthlyLoss: number;
   annualLoss: number;
+  monthlyLossRange: ValueRange;
+  annualLossRange: ValueRange;
   winnableCustomers: number;
   customersLost: number;
   currentlyRecovered: number;
@@ -55,6 +77,8 @@ export interface ReactivationLeak {
   label: string;
   monthlyLoss: number;
   annualLoss: number;
+  monthlyLossRange: ValueRange;
+  annualLossRange: ValueRange;
   dormantLeads: DormantLeadsResult | null;
   pastCustomers: PastCustomersResult | null;
   severity: "critical" | "high" | "medium" | "low";
@@ -69,6 +93,8 @@ export interface ReactivationLeak {
 export interface CalculationResult {
   totalMonthlyLoss: number;
   totalAnnualLoss: number;
+  totalMonthlyLossRange: ValueRange;
+  totalAnnualLossRange: ValueRange;
   leaks: Leak[];
   reactivationOpportunity: ReactivationLeak | null;
   operationalLeaks: Leak[];
@@ -150,12 +176,15 @@ export function calculateMissedCallsLeak(data: CalculatorFormData): Leak {
   // Cap at 8% of monthly revenue
   const monthlyLoss = Math.min(rawLoss, monthlyRevenue * 0.08);
 
+  const roundedMonthlyLoss = Math.round(monthlyLoss);
   return {
     rank: 0,
     type: "missedCalls",
     label: "Missed Calls",
-    monthlyLoss: Math.round(monthlyLoss),
-    annualLoss: Math.round(monthlyLoss * 12),
+    monthlyLoss: roundedMonthlyLoss,
+    annualLoss: roundedMonthlyLoss * 12,
+    monthlyLossRange: createRange(roundedMonthlyLoss),
+    annualLossRange: createRange(roundedMonthlyLoss * 12),
     severity: getSeverityByPercent(monthlyLoss / monthlyRevenue),
     details: {
       missedCallRate: `${(missedCallRate * 100).toFixed(0)}%`,
@@ -195,12 +224,15 @@ export function calculateSlowResponseLeak(data: CalculatorFormData): Leak {
     "dont-track": "Not tracked",
   };
 
+  const roundedMonthlyLoss = Math.round(monthlyLoss);
   return {
     rank: 0,
     type: "slowResponse",
     label: "Slow Response Time",
-    monthlyLoss: Math.round(monthlyLoss),
-    annualLoss: Math.round(monthlyLoss * 12),
+    monthlyLoss: roundedMonthlyLoss,
+    annualLoss: roundedMonthlyLoss * 12,
+    monthlyLossRange: createRange(roundedMonthlyLoss),
+    annualLossRange: createRange(roundedMonthlyLoss * 12),
     severity: getSeverityByPercent(monthlyLoss / monthlyRevenue),
     details: {
       currentResponseTime: responseTimeLabels[responseTime] || responseTime,
@@ -243,12 +275,15 @@ export function calculateNoFollowUpLeak(data: CalculatorFormData): Leak {
   // Cap at 8% of monthly revenue
   const monthlyLoss = Math.min(rawLoss, monthlyRevenue * 0.08);
 
+  const roundedMonthlyLoss = Math.round(monthlyLoss);
   return {
     rank: 0,
     type: "noFollowUp",
     label: "Insufficient Follow-Up",
-    monthlyLoss: Math.round(monthlyLoss),
-    annualLoss: Math.round(monthlyLoss * 12),
+    monthlyLoss: roundedMonthlyLoss,
+    annualLoss: roundedMonthlyLoss * 12,
+    monthlyLossRange: createRange(roundedMonthlyLoss),
+    annualLossRange: createRange(roundedMonthlyLoss * 12),
     severity: getSeverityByPercent(monthlyLoss / monthlyRevenue),
     details: {
       leadsNotFollowedUp: Math.round(leadsNotFollowedUp),
@@ -273,6 +308,8 @@ export function calculateNoShowLeak(data: CalculatorFormData): Leak {
       label: "Appointment No-Shows",
       monthlyLoss: 0,
       annualLoss: 0,
+      monthlyLossRange: createRange(0),
+      annualLossRange: createRange(0),
       severity: "low",
       details: { applicable: false },
       recommendation: "Not applicable to your business model.",
@@ -298,12 +335,15 @@ export function calculateNoShowLeak(data: CalculatorFormData): Leak {
   // Cap at 6% of monthly revenue
   const monthlyLoss = Math.min(rawLoss, monthlyRevenue * 0.06);
 
+  const roundedMonthlyLoss = Math.round(monthlyLoss);
   return {
     rank: 0,
     type: "noShow",
     label: "Appointment No-Shows",
-    monthlyLoss: Math.round(monthlyLoss),
-    annualLoss: Math.round(monthlyLoss * 12),
+    monthlyLoss: roundedMonthlyLoss,
+    annualLoss: roundedMonthlyLoss * 12,
+    monthlyLossRange: createRange(roundedMonthlyLoss),
+    annualLossRange: createRange(roundedMonthlyLoss * 12),
     severity: getSeverityByPercent(monthlyLoss / monthlyRevenue),
     details: {
       appointmentsBooked,
@@ -328,6 +368,8 @@ export function calculateUnqualifiedLeadLeak(data: CalculatorFormData): Leak {
       label: "Unqualified Lead Time",
       monthlyLoss: 0,
       annualLoss: 0,
+      monthlyLossRange: createRange(0),
+      annualLossRange: createRange(0),
       severity: "low",
       details: { qualifiesLeads: true },
       recommendation: "Your lead qualification process is in place.",
@@ -349,12 +391,15 @@ export function calculateUnqualifiedLeadLeak(data: CalculatorFormData): Leak {
   // Cap at 3% of monthly revenue
   const monthlyLoss = Math.min(rawLoss, monthlyRevenue * 0.03);
 
+  const roundedMonthlyLoss = Math.round(monthlyLoss);
   return {
     rank: 0,
     type: "unqualifiedLeads",
     label: "Unqualified Lead Time",
-    monthlyLoss: Math.round(monthlyLoss),
-    annualLoss: Math.round(monthlyLoss * 12),
+    monthlyLoss: roundedMonthlyLoss,
+    annualLoss: roundedMonthlyLoss * 12,
+    monthlyLossRange: createRange(roundedMonthlyLoss),
+    annualLossRange: createRange(roundedMonthlyLoss * 12),
     severity: getSeverityByPercent(monthlyLoss / monthlyRevenue),
     details: {
       unqualifiedLeadsPerMonth: Math.round(unqualifiedLeads),
@@ -385,12 +430,15 @@ export function calculateAfterHoursLeak(data: CalculatorFormData): Leak {
   // Cap at 6% of monthly revenue
   const monthlyLoss = Math.min(rawLoss, monthlyRevenue * 0.06);
 
+  const roundedMonthlyLoss = Math.round(monthlyLoss);
   return {
     rank: 0,
     type: "afterHours",
     label: "After-Hours & Weekend Calls",
-    monthlyLoss: Math.round(monthlyLoss),
-    annualLoss: Math.round(monthlyLoss * 12),
+    monthlyLoss: roundedMonthlyLoss,
+    annualLoss: roundedMonthlyLoss * 12,
+    monthlyLossRange: createRange(roundedMonthlyLoss),
+    annualLossRange: createRange(roundedMonthlyLoss * 12),
     severity: getSeverityByPercent(monthlyLoss / monthlyRevenue),
     details: {
       missedCallsAfterHours: Math.round(missedCalls),
@@ -419,12 +467,15 @@ export function calculateHoldTimeLeak(data: CalculatorFormData): Leak {
   // Cap at 4% of monthly revenue
   const monthlyLoss = Math.min(rawLoss, monthlyRevenue * 0.04);
 
+  const roundedMonthlyLoss = Math.round(monthlyLoss);
   return {
     rank: 0,
     type: "holdTime",
     label: "Long Hold Times",
-    monthlyLoss: Math.round(monthlyLoss),
-    annualLoss: Math.round(monthlyLoss * 12),
+    monthlyLoss: roundedMonthlyLoss,
+    annualLoss: roundedMonthlyLoss * 12,
+    monthlyLossRange: createRange(roundedMonthlyLoss),
+    annualLossRange: createRange(roundedMonthlyLoss * 12),
     severity: getSeverityByPercent(monthlyLoss / monthlyRevenue),
     details: {
       avgHoldTimeMinutes: avgHoldTime,
@@ -490,9 +541,12 @@ export function calculateDormantLeadsValue(data: CalculatorFormData): DormantLea
   const monthlyLoss = customersLost * avgTransaction;
   const bestCaseRevenue = bestCaseCustomers * avgTransaction;
 
+  const roundedMonthlyLoss = Math.round(monthlyLoss);
   return {
-    monthlyLoss: Math.round(monthlyLoss),
-    annualLoss: Math.round(monthlyLoss * 12),
+    monthlyLoss: roundedMonthlyLoss,
+    annualLoss: roundedMonthlyLoss * 12,
+    monthlyLossRange: createRange(roundedMonthlyLoss),
+    annualLossRange: createRange(roundedMonthlyLoss * 12),
     viableLeads: Math.round(viableLeads),
     expectedCustomers: Math.round(expectedCustomers),
     bestCaseCustomers: Math.round(bestCaseCustomers),
@@ -541,9 +595,12 @@ export function calculatePastCustomerValue(data: CalculatorFormData): PastCustom
   };
   const frequencyImpact = sendsReengagementCampaigns ? frequencyMultipliers[reengagementFrequency] || 0.30 : 0;
 
+  const roundedMonthlyLoss = Math.round(monthlyLoss);
   return {
-    monthlyLoss: Math.round(monthlyLoss),
-    annualLoss: Math.round(monthlyLoss * 12),
+    monthlyLoss: roundedMonthlyLoss,
+    annualLoss: roundedMonthlyLoss * 12,
+    monthlyLossRange: createRange(roundedMonthlyLoss),
+    annualLossRange: createRange(roundedMonthlyLoss * 12),
     winnableCustomers: Math.round(winnableCustomers),
     customersLost: Math.round(customersLost),
     currentlyRecovered: Math.round(currentlyRecovered),
@@ -585,11 +642,14 @@ export function calculateReactivationLeak(data: CalculatorFormData): Reactivatio
   const severity: "critical" | "high" | "medium" | "low" =
     totalMonthlyLoss > 8000 ? "critical" : totalMonthlyLoss > 4000 ? "high" : "medium";
 
+  const roundedMonthlyLoss = Math.round(totalMonthlyLoss);
   return {
     type: "reactivation",
     label: "Dormant Leads & Customer Reactivation",
-    monthlyLoss: Math.round(totalMonthlyLoss),
-    annualLoss: Math.round(totalMonthlyLoss * 12),
+    monthlyLoss: roundedMonthlyLoss,
+    annualLoss: roundedMonthlyLoss * 12,
+    monthlyLossRange: createRange(roundedMonthlyLoss),
+    annualLossRange: createRange(roundedMonthlyLoss * 12),
     dormantLeads,
     pastCustomers,
     severity,
@@ -636,6 +696,8 @@ export function calculateAllLeaks(formData: CalculatorFormData): CalculationResu
       label: reactivationOpportunity.label,
       monthlyLoss: reactivationOpportunity.monthlyLoss,
       annualLoss: reactivationOpportunity.annualLoss,
+      monthlyLossRange: reactivationOpportunity.monthlyLossRange,
+      annualLossRange: reactivationOpportunity.annualLossRange,
       severity: reactivationOpportunity.severity,
       quickWin: true,
       details: {
@@ -659,17 +721,25 @@ export function calculateAllLeaks(formData: CalculatorFormData): CalculationResu
   
   if (totalMonthlyLoss > maxTotalLoss) {
     const reductionFactor = maxTotalLoss / totalMonthlyLoss;
-    allLeaks = allLeaks.map(leak => ({
-      ...leak,
-      monthlyLoss: Math.round(leak.monthlyLoss * reductionFactor),
-      annualLoss: Math.round(leak.monthlyLoss * reductionFactor * 12),
-    }));
+    allLeaks = allLeaks.map(leak => {
+      const newMonthlyLoss = Math.round(leak.monthlyLoss * reductionFactor);
+      return {
+        ...leak,
+        monthlyLoss: newMonthlyLoss,
+        annualLoss: newMonthlyLoss * 12,
+        monthlyLossRange: createRange(newMonthlyLoss),
+        annualLossRange: createRange(newMonthlyLoss * 12),
+      };
+    });
     totalMonthlyLoss = Math.round(maxTotalLoss);
   }
 
+  const roundedTotal = Math.round(totalMonthlyLoss);
   return {
-    totalMonthlyLoss: Math.round(totalMonthlyLoss),
-    totalAnnualLoss: Math.round(totalMonthlyLoss * 12),
+    totalMonthlyLoss: roundedTotal,
+    totalAnnualLoss: roundedTotal * 12,
+    totalMonthlyLossRange: createRange(roundedTotal),
+    totalAnnualLossRange: createRange(roundedTotal * 12),
     leaks: allLeaks,
     reactivationOpportunity,
     operationalLeaks,
@@ -689,6 +759,21 @@ export function formatCurrency(value: number): string {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(value);
+}
+
+// Format a currency range (e.g., "$17,430 – $29,880")
+export function formatCurrencyRange(range: ValueRange): string {
+  return `${formatCurrency(range.conservative)} – ${formatCurrency(range.aggressive)}`;
+}
+
+// Compact format for ranges (e.g., "$17k–$30k")
+export function formatCurrencyRangeCompact(range: ValueRange): string {
+  const formatShort = (n: number) => {
+    if (n >= 1000000) return `$${(n / 1000000).toFixed(1)}M`;
+    if (n >= 1000) return `$${Math.round(n / 1000)}k`;
+    return formatCurrency(n);
+  };
+  return `${formatShort(range.conservative)}–${formatShort(range.aggressive)}`;
 }
 
 export function getSeverityColor(severity: Leak["severity"]): {

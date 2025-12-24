@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Zap, Users, DollarSign, Clock, ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { formatCurrency, ReactivationLeak } from "@/utils/calculations";
+import { formatCurrencyRangeCompact, ReactivationLeak } from "@/utils/calculations";
 
 interface QuickWinCardProps {
   reactivation: ReactivationLeak;
@@ -12,7 +12,6 @@ export function QuickWinCard({ reactivation, onViewPlan }: QuickWinCardProps) {
   const dormantCount = reactivation.dormantLeads?.viableLeads || 0;
   const pastCount = reactivation.pastCustomers?.winnableCustomers || 0;
   const totalContacts = dormantCount + pastCount;
-  const monthlyRecovery = reactivation.monthlyLoss;
   
   return (
     <motion.div
@@ -73,8 +72,8 @@ export function QuickWinCard({ reactivation, onViewPlan }: QuickWinCardProps) {
               <DollarSign className="w-4 h-4" />
               <span className="text-xs font-medium">Monthly</span>
             </div>
-            <p className="text-2xl font-bold text-success font-numeric">
-              {formatCurrency(monthlyRecovery)}
+            <p className="text-xl font-bold text-success font-numeric">
+              {formatCurrencyRangeCompact(reactivation.monthlyLossRange)}
             </p>
             <p className="text-xs text-muted-foreground">Projected recovery</p>
           </div>

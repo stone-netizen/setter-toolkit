@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Download, Edit3, ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { formatCurrency, CalculationResult } from "@/utils/calculations";
+import { formatCurrencyRangeCompact, CalculationResult } from "@/utils/calculations";
 import { CalculatorFormData } from "@/hooks/useCalculatorForm";
 import { toast } from "sonner";
 import { CalendlyModal } from "@/components/CalendlyModal";
@@ -73,6 +73,13 @@ export default function Results() {
 
   const { results, formData } = storedData;
 
+  // Calculate recovery range (65% of loss range)
+  const recoveryRange = {
+    conservative: Math.round(results.totalMonthlyLossRange.conservative * 0.65),
+    expected: Math.round(results.totalMonthlyLossRange.expected * 0.65),
+    aggressive: Math.round(results.totalMonthlyLossRange.aggressive * 0.65),
+  };
+
   return (
     <div className="min-h-screen bg-background custom-scrollbar">
       {/* Fixed Header */}
@@ -101,6 +108,8 @@ export default function Results() {
           industry={formData.industry}
           monthlyLoss={results.totalMonthlyLoss}
           annualLoss={results.totalAnnualLoss}
+          monthlyLossRange={results.totalMonthlyLossRange}
+          annualLossRange={results.totalAnnualLossRange}
           onBookCall={() => setIsCalendlyOpen(true)}
         />
 
@@ -140,11 +149,14 @@ export default function Results() {
                 <h2 className="text-display font-bold text-foreground mb-4">
                   Ready to fix these leaks?
                 </h2>
-                <p className="text-lg text-muted-foreground mb-8 max-w-lg mx-auto">
+                <p className="text-lg text-muted-foreground mb-2 max-w-lg mx-auto">
                   Get a personalized plan to recover{" "}
                   <span className="text-success font-semibold">
-                    {formatCurrency(results.totalMonthlyLoss * 0.65)}/month
+                    {formatCurrencyRangeCompact(recoveryRange)}/month
                   </span>
+                </p>
+                <p className="text-xs text-muted-foreground mb-8">
+                  (confidence-adjusted range)
                 </p>
                 <Button
                   size="lg"
@@ -181,7 +193,7 @@ export default function Results() {
             <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
               <div className="hidden sm:block">
                 <p className="text-sm font-medium text-foreground">
-                  Recover {formatCurrency(results.totalMonthlyLoss * 0.65)}/month
+                  Recover {formatCurrencyRangeCompact(recoveryRange)}/month
                 </p>
               </div>
               <Button

@@ -1,13 +1,15 @@
 import { motion } from "framer-motion";
 import { AlertTriangle, ArrowRight, TrendingDown, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { formatCurrency } from "@/utils/calculations";
+import { formatCurrencyRangeCompact, ValueRange } from "@/utils/calculations";
 
 interface HeroSectionProps {
   businessName: string;
   industry?: string;
   monthlyLoss: number;
   annualLoss: number;
+  monthlyLossRange: ValueRange;
+  annualLossRange: ValueRange;
   onBookCall: () => void;
 }
 
@@ -16,6 +18,8 @@ export function HeroSection({
   industry,
   monthlyLoss,
   annualLoss,
+  monthlyLossRange,
+  annualLossRange,
   onBookCall,
 }: HeroSectionProps) {
   // Calculate percentage (assuming ~$100k monthly revenue for context)
@@ -78,13 +82,13 @@ export function HeroSection({
             className="mb-8"
           >
             <p className="text-lg sm:text-xl text-muted-foreground mb-4">
-              You're losing
+              Estimated recoverable revenue
             </p>
             
-            {/* HERO NUMBER */}
+            {/* HERO NUMBER - Now a range */}
             <div className="relative inline-block">
               <span className="hero-number text-gradient-destructive font-numeric">
-                {formatCurrency(monthlyLoss)}
+                {formatCurrencyRangeCompact(monthlyLossRange)}
               </span>
               
               {/* Glow effect behind number */}
@@ -93,10 +97,13 @@ export function HeroSection({
 
             <div className="mt-4 space-y-2">
               <p className="text-xl sm:text-2xl text-muted-foreground">
-                every month in fixable leaks
+                per month in fixable leaks
               </p>
               <p className="text-2xl sm:text-3xl font-bold text-foreground font-numeric">
-                {formatCurrency(annualLoss)} annually
+                {formatCurrencyRangeCompact(annualLossRange)} annually
+              </p>
+              <p className="text-xs text-muted-foreground mt-2">
+                (confidence-adjusted range)
               </p>
             </div>
           </motion.div>
