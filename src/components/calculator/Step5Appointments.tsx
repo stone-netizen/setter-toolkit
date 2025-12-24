@@ -158,7 +158,7 @@ export const Step5Appointments = ({ form }: StepProps) => {
                   : "text-emerald-600"
               )}>
                 {parseFloat(noShowRate) > 20 
-                  ? "High no-show rate. This is a major revenue leak!" 
+                  ? "High no-show rate. This represents a material revenue risk." 
                   : parseFloat(noShowRate) > 10 
                   ? "Above average. Consider implementing reminders."
                   : "Great! Your no-show rate is below industry average."}
