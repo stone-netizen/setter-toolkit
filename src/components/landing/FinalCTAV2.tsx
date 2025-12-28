@@ -2,7 +2,7 @@ import { MagneticButton } from "@/components/ui/magnetic-button";
 import { ArrowRight } from "lucide-react";
 
 interface FinalCTAV2Props {
-  onStart: () => void;
+  onStart: (data?: { industry: string; inbound: number }) => void;
 }
 
 export function FinalCTAV2({ onStart }: FinalCTAV2Props) {
@@ -22,7 +22,7 @@ export function FinalCTAV2({ onStart }: FinalCTAV2Props) {
         <div className="flex flex-col items-center space-y-6">
           <MagneticButton
             size="lg"
-            onClick={onStart}
+            onClick={() => onStart()}
             strength={0.3}
             className="px-10 sm:px-14 py-4 sm:py-5 h-auto text-lg sm:text-2xl font-black uppercase italic rounded-2xl bg-emerald-500 text-black hover:bg-emerald-400 shadow-[0_20px_40px_rgba(16,185,129,0.3)] transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-3"
           >
