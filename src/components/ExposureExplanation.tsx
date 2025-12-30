@@ -51,11 +51,14 @@ export function ExposureExplanation({ isOpen, onClose, inputs }: ExposureExplana
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-white/5 bg-white/[0.02]">
                     <div className="space-y-1">
-                        <h2 className="text-sm font-black uppercase tracking-widest text-slate-300 flex items-center gap-2">
-                            <Info className="w-4 h-4 text-emerald-500" />
-                            How This Number Is Calculated
-                        </h2>
-                        <p className="text-[10px] uppercase tracking-widest text-slate-600 font-bold">Setter Only · Hidden from Business Owner</p>
+                        <div className="flex items-center gap-2">
+                            <h2 className="text-sm font-black uppercase tracking-widest text-slate-300 flex items-center gap-2">
+                                <Info className="w-4 h-4 text-emerald-500" />
+                                Revenue Exposure Logic
+                            </h2>
+                            <span className="px-1.5 py-0.5 rounded-sm bg-slate-800 text-[9px] font-mono text-slate-400">REF: UND-X7</span>
+                        </div>
+                        <p className="text-[10px] uppercase tracking-widest text-emerald-500/80 font-black">INTERNAL UNDERWRITING DOCUMENTATION · DO NOT SHOW CLIENT</p>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full text-slate-500 hover:text-white transition-colors">
                         <X className="w-5 h-5" />
@@ -122,27 +125,41 @@ export function ExposureExplanation({ isOpen, onClose, inputs }: ExposureExplana
                                     <div className="space-y-2">
                                         <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Explanation</p>
                                         <ul className="text-xs text-slate-400 space-y-1.5 list-disc pl-4">
-                                            <li>Uses only missed live calls</li>
-                                            <li>Assumes lower-than-actual close rate</li>
-                                            <li>Ignores slow follow-up</li>
-                                            <li>Ignores after-hours leakage</li>
-                                            <li>Ignores lead decay</li>
-                                            <li className="text-white font-medium">Designed to understate, not exaggerate</li>
+                                            <li>Uses only <span className="text-emerald-500">missed live calls</span> (Input 3)</li>
+                                            <li>Assumes <span className="text-emerald-500">conservative close rate</span> (Input 5)</li>
+                                            <li>Ignores slow follow-up & after-hours</li>
+                                            <li>Ignores lead decay & lifetime value</li>
+                                            <li className="text-white font-medium">Designed to understate exposure</li>
                                         </ul>
                                     </div>
                                     <div className="space-y-2">
-                                        <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Live Example</p>
-                                        <div className="p-3 bg-zinc-900 rounded-lg border border-white/5 text-xs text-slate-300 space-y-2">
-                                            <p>“Based on what was entered:</p>
-                                            <ul className="space-y-1 text-emerald-500/80 font-mono">
-                                                <li>• {inputs.inquiries} inbound inquiries/week</li>
-                                                <li>• {inputs.ratio} missed calls per 10</li>
-                                                <li>• {formatCurrency(inputs.ticket)} average ticket</li>
-                                                <li>• {inputs.closeRate}% conservative close rate</li>
-                                            </ul>
-                                            <p className="pt-2 border-t border-white/10 text-white font-bold">
-                                                This produces a monthly exposure floor of {formatCurrency(floorMonthly)}.”
-                                            </p>
+                                        <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Calculation Ledger</p>
+                                        <div className="p-4 bg-black rounded-lg border border-white/10 font-mono text-xs text-slate-300 space-y-3">
+                                            <div className="flex justify-between">
+                                                <span>Inquiries:</span>
+                                                <span className="text-white">{inputs.inquiries}/wk</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span>Missed Ratio:</span>
+                                                <span className="text-white">{inputs.ratio}/10</span>
+                                            </div>
+                                            <div className="flex justify-between opacity-50">
+                                                <span>Est. Missed:</span>
+                                                <span>{missedCalls}/wk</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span>Avg Ticket:</span>
+                                                <span className="text-white">{formatCurrency(inputs.ticket)}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span>Close Rate (Floor):</span>
+                                                <span className="text-emerald-500">{inputs.closeRate}%</span>
+                                            </div>
+                                            <div className="h-px bg-white/20 my-2" />
+                                            <div className="flex justify-between font-bold text-emerald-400">
+                                                <span>FLOOR EXPOSURE:</span>
+                                                <span>{formatCurrency(floorMonthly)}</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -190,17 +207,36 @@ export function ExposureExplanation({ isOpen, onClose, inputs }: ExposureExplana
                                     <div className="space-y-2">
                                         <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Explanation</p>
                                         <ul className="text-xs text-slate-400 space-y-1.5 list-disc pl-4">
-                                            <li>Includes missed live calls</li>
-                                            <li>Includes after-hours unanswered calls</li>
+                                            <li>Includes missed live + <span className="text-emerald-500">after-hours</span></li>
                                             <li>Includes leads never re-contacted</li>
-                                            <li>Uses realistic close rate, not padded</li>
-                                            <li className="text-white font-medium">Still excludes marketing scale, upsells, LTV</li>
+                                            <li>Uses realistic close rate (100% of baseline)</li>
+                                            <li className="text-white font-medium">Shows realistic upper bound</li>
                                         </ul>
                                     </div>
                                     <div className="space-y-2">
-                                        <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Live Example</p>
-                                        <div className="p-3 bg-zinc-900 rounded-lg border border-white/5 text-xs text-slate-300 space-y-2">
-                                            <p>“Using the same inputs but removing safety caps, this estimates a full exposure of <span className="text-white font-bold">{formatCurrency(fullMonthly)}</span>.”</p>
+                                        <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Calculation Ledger</p>
+                                        <div className="p-4 bg-black rounded-lg border border-white/10 font-mono text-xs text-slate-300 space-y-3">
+                                            <div className="flex justify-between">
+                                                <span>Missed Live:</span>
+                                                <span className="text-white">Included</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span>After-Hours:</span>
+                                                <span className="text-white">Included</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span>Follow-up Gap:</span>
+                                                <span className="text-white">Included</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span>Close Rate (Full):</span>
+                                                <span className="text-emerald-500">{inputs.closeRate}%</span>
+                                            </div>
+                                            <div className="h-px bg-white/20 my-2" />
+                                            <div className="flex justify-between font-bold text-white">
+                                                <span>FULL EXPOSURE:</span>
+                                                <span>{formatCurrency(fullMonthly)}</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
