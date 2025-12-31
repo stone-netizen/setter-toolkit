@@ -54,8 +54,10 @@ export function ExposureExplanation({ isOpen, onClose, inputs }: ExposureExplana
                 className="w-full max-w-3xl bg-black relative border border-white/10 rounded-[2rem] shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
                 style={{ backgroundColor: "#000000" }}
             >
+                <div className="absolute inset-0 z-0" style={{ backgroundColor: "#000000" }} />
+
                 {/* Header */}
-                <div className="flex items-center justify-between p-8 border-b border-white/5 bg-white/[0.02]">
+                <div className="flex items-center justify-between p-8 border-b border-white/5 bg-white/[0.02] relative z-10">
                     <div className="space-y-2">
                         <div className="flex items-center gap-3">
                             <div className="p-2 bg-zinc-900 rounded-lg border border-white/5">
@@ -76,7 +78,7 @@ export function ExposureExplanation({ isOpen, onClose, inputs }: ExposureExplana
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar relative z-10">
 
                     {/* INPUTS ROW (EQUAL CARDS) */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -167,7 +169,7 @@ export function ExposureExplanation({ isOpen, onClose, inputs }: ExposureExplana
                 </div>
 
                 {/* FOOTER OUTPUT BAR */}
-                <div className="bg-black border-t border-white/10 p-6 grid grid-cols-3 gap-8">
+                <div className="bg-black border-t border-white/10 p-6 grid grid-cols-3 gap-8 relative z-10">
                     <div className="text-center space-y-1 opacity-50">
                         <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Daily</p>
                         <p className="text-sm font-bold text-slate-300">{formatCurrency(currentDaily)}</p>
