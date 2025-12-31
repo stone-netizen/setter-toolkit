@@ -50,7 +50,8 @@ export function ExposureExplanation({ isOpen, onClose, inputs }: ExposureExplana
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="w-full max-w-3xl bg-zinc-950 relative border border-white/10 rounded-[2rem] shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
+                className="w-full max-w-3xl bg-black relative border border-white/10 rounded-[2rem] shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
+                style={{ backgroundColor: "#09090b" }}
             >
                 {/* Header */}
                 <div className="flex items-center justify-between p-8 border-b border-white/5 bg-white/[0.02]">
