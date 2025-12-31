@@ -773,18 +773,29 @@ export default function Calculator() {
                     Book 15-Min Verification Call
                   </Button>
 
-                  <Button
-                    disabled={!isDownloadReady}
-                    onClick={handleDownloadCSV}
-                    variant="ghost"
-                    className={`w-full h-12 font-bold uppercase tracking-wide text-[10px] rounded-xl border transition-all ${isDownloadReady
-                      ? 'bg-white/[0.05] border-white/10 text-white hover:bg-white/10'
-                      : 'bg-transparent border-transparent text-slate-700 cursor-not-allowed'
-                      }`}
-                  >
-                    <Download className="w-3 h-3 mr-2" />
-                    Download Business Case CSV
-                  </Button>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button
+                      onClick={handleCopyRow}
+                      variant="outline"
+                      className="h-12 bg-white/[0.02] border-white/5 hover:bg-white/10 text-slate-400 hover:text-white text-[9px] font-black uppercase tracking-widest rounded-xl transition-all"
+                    >
+                      <ClipboardCheck className="w-3 h-3 mr-2" />
+                      Copy Row
+                    </Button>
+
+                    <Button
+                      disabled={!isDownloadReady}
+                      onClick={handleDownloadCSV}
+                      variant="ghost"
+                      className={`h-12 font-black uppercase tracking-widest text-[9px] rounded-xl border transition-all ${isDownloadReady
+                        ? 'bg-white/[0.05] border-white/10 text-white hover:bg-white/10'
+                        : 'bg-transparent border-transparent text-slate-700 cursor-not-allowed'
+                        }`}
+                    >
+                      <Download className="w-3 h-3 mr-2" />
+                      Save CSV
+                    </Button>
+                  </div>
                 </div>
 
                 {!isDownloadReady && formData.isBooked && (
