@@ -1,137 +1,176 @@
-/**
- * SETTER QUALIFICATION COCKPIT - MATH ENGINE (PRODUCTION)
- * 
- * Logic: 4-Step Pipeline
- * 1. Missed Calls = inquiries * (missedRatio / 10)
- * 2. Clients Lost = Missed Calls * (Close Rate / 100)
- * 3. Weekly Exposure = Clients Lost * Avg Ticket
- * 4. Monthly Exposure = Weekly Exposure * 4
- * 
- * Multipliers:
- * - Floor (Conservative) = 0.65
- * - Full (Estimated) = 1.0
- */
+import { formatCurrency } from "@/utils/calculations"; // Using existing format helper if available, or will redefine if strictly needed. Actually, let's redefine internal helpers to allow this file to be self-contained for the engine.
 
-export type QualificationStatus = "BOOKED" | "QUALIFIED" | "DISQUALIFIED" | "INCOMPLETE";
+// --- Helper for Currency ---
+export const formatCurrencyStrict = (val: number): string => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(val);
+};
+
+export const formatCurrencyCompact = (val: number): string => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    notation: "compact",
+    maximumFractionDigits: 1
+  }).format(val);
+};
+
+// --- Canonical Types ---
+
+export interface ExposureInput {
+  inquiriesWeekly: number;
+  missedPer10: number; // 0-10
+  avgTicket: number;
+  closeRate: number; // 0.0 - 1.0 (decimal)
+}
+
+export interface ExposureResult {
+  missedRate: number;      // e.g. 0.3
+  missedWeekly: number;    // e.g. 30.0
+  missedMonthly: number;   // e.g. 120.0
+  daily: number;           // $
+  monthly: number;         // $
+  yearly: number;          // $
+}
 
 export interface CockpitResult {
-  missedCalls: number;
-  monthlyExposure: number;
+  status: "INCOMPLETE" | "DISQUALIFIED" | "QUALIFIED" | "BOOKED";
   dailyExposure: number;
+  monthlyExposure: number;
   yearlyExposure: number;
-  status: QualificationStatus;
-  statusReason?: string;
-  nextStep?: string;
-  certaintyLabel: string;
-  primaryConstraint: string;
+  missedCalls: number; // Monthly missed calls for display compatibility
+  fullExposure: number; // For Ledger compatibility
+  conservativeExposure: number; // For Ledger compatibility
+  nextStep: string;
 }
+
+// --- Unified Math Engine ---
+
+export function computeExposure(input: ExposureInput): ExposureResult {
+  // Guardrails: Default to 0 if NaN/undefined and Clamp
+  const inquiries = Math.max(0, input.inquiriesWeekly || 0);
+  const missed10 = Math.min(10, Math.max(0, input.missedPer10 || 0));
+  const ticket = Math.max(0, input.avgTicket || 0);
+  const rate = Math.min(1.0, Math.max(0, input.closeRate || 0));
+
+  // 1. Missed Rate
+  const missedRate = missed10 / 10;
+
+  // 2. Missed Weekly (Round to 1 decimal)
+  // Logic: inquiries * rate
+  const rawMissedWeekly = inquiries * missedRate;
+  const missedWeekly = Math.round(rawMissedWeekly * 10) / 10;
+
+  // 3. Missed Monthly (Fixed x4 multiplier)
+  // Logic: missedWeekly * 4
+  const missedMonthly = Math.round((missedWeekly * 4) * 10) / 10;
+
+  // 4. Monthly Exposure
+  // Logic: missedMonthly * ticket * closeRate
+  const monthly = Math.round(missedMonthly * ticket * rate);
+
+  // 5. Daily / Yearly
+  // Daily = Monthly / 30
+  // Yearly = Monthly * 12
+  const daily = Math.round(monthly / 30);
+  const yearly = Math.round(monthly * 12);
+
+  return {
+    missedRate,
+    missedWeekly,
+    missedMonthly,
+    daily,
+    monthly,
+    yearly
+  };
+}
+
+// --- Main Calculator Function (The "Brain") ---
 
 export function calculateCockpitResult(data: {
   inquiresPerWeek: number;
   avgTicket: number;
-  percentageRatio: number; // 0-10 out of 10
+  percentageRatio: number; // 0-10
   dmConfirmed: boolean;
   ownerAttending: boolean;
   isBooked?: boolean;
-  slowResponse?: boolean;
-  afterHoursIssue?: boolean;
-  followUpBroken?: boolean;
-  manualConstraintOverride?: boolean;
-  customConstraint?: string;
   exposureMode: "floor" | "full";
-  closeRate: number;
+  closeRate: number; // 0-100 (integer from slider)
+  industryRate?: number; // 0.0-1.0 (decimal from defaults)
   businessName: string;
 }): CockpitResult {
-  // 1. Input Normalization (NaN Prevention)
+
+  // Normalization
   const inputs = {
-    inquiries: Math.max(0, Number(data.inquiresPerWeek) || 0),
-    ratio: Math.min(10, Math.max(0, Number(data.percentageRatio) || 0)),
-    ticket: Math.max(0, Number(data.avgTicket) || 0),
-    closeRate: Math.min(100, Math.max(0, Number(data.closeRate) || 0)) / 100, // Normalized to 0-1
+    inquiries: Math.max(0, data.inquiresPerWeek || 0),
+    ratio: Math.min(10, Math.max(0, data.percentageRatio || 0)),
+    ticket: Math.max(0, data.avgTicket || 0),
+    closeRate: Math.max(0, data.closeRate || 0) / 100, // Convert integer % to decimal
+    industryRate: Math.max(0, data.industryRate || 0.25) // Default to 25% if missing
   };
 
-  const isComplete = data.businessName && inputs.inquiries > 0 && inputs.ratio >= 0 && inputs.ticket > 0;
+  // 1. Calculate Conservative (Floor) using User's Slider
+  const conservativeResult = computeExposure({
+    inquiriesWeekly: inputs.inquiries,
+    missedPer10: inputs.ratio,
+    avgTicket: inputs.ticket,
+    closeRate: inputs.closeRate
+  });
 
-  // 2. Math Engine (4-Step Formula)
-  const missedCallsPerWeek = Math.round(inputs.inquiries * (inputs.ratio / 10));
-  const clientsLostPerWeek = missedCallsPerWeek * inputs.closeRate;
-  const weeklyExposure = clientsLostPerWeek * inputs.ticket;
-  let monthlyExposure = weeklyExposure * 4;
+  // 2. Calculate Full (Uncapped) using 100% (1.0) Rate as per v10.5 Spec
+  const fullResult = computeExposure({
+    inquiriesWeekly: inputs.inquiries,
+    missedPer10: inputs.ratio,
+    avgTicket: inputs.ticket,
+    closeRate: 1.0 // FULL EXPOSURE = 100% of missed calls
+  });
 
-  // Multipliers
-  if (data.exposureMode === "floor") {
-    monthlyExposure = monthlyExposure * 0.65; // Conservative Floor
-  } else {
-    monthlyExposure = monthlyExposure * 1.0; // Full Estimate
+  // 3. Determine Active Display based on Toggle
+  const activeResult = data.exposureMode === 'full' ? fullResult : conservativeResult;
+
+  // 4. Determine Status
+  let status: CockpitResult["status"] = "INCOMPLETE";
+  let nextStep = "Input Data...";
+
+  // Check completeness
+  const hasData = inputs.inquiries > 0 && inputs.ratio > 0 && inputs.ticket > 0;
+
+  if (hasData) {
+    // Disqualification Logic
+    const isVolumeTooLow = inputs.inquiries < 10;
+    const isMissedTooLow = inputs.ratio < 2; // < 2/10
+    const isTicketTooLow = inputs.ticket < 300;
+    const isExposureTooLow = conservativeResult.monthly < 3000;
+
+    if (isVolumeTooLow || isMissedTooLow || isTicketTooLow || isExposureTooLow) {
+      status = "DISQUALIFIED";
+      nextStep = "Lead Disqualified: Below Thresholds";
+    } else {
+      status = "QUALIFIED";
+      nextStep = "Unlock Value -> Book Verification";
+    }
   }
 
-  const dailyExposure = monthlyExposure / 30;
-  const yearlyExposure = monthlyExposure * 12;
-
-  const certaintyLabel = `Out of 10 (${inputs.ratio})`;
-
-  // 3. Automated Constraint Identification
-  let primaryConstraint = "Lead Capture Failure";
-  if (data.manualConstraintOverride && data.customConstraint) {
-    primaryConstraint = data.customConstraint;
-  } else {
-    if (data.followUpBroken) primaryConstraint = "Follow-Up Breakdown";
-    else if (data.afterHoursIssue) primaryConstraint = "After-Hours Coverage Gap";
-    else if (data.slowResponse) primaryConstraint = "Slow Response Time";
-    else if (missedCallsPerWeek > 0) primaryConstraint = "Lead Capture Failure";
-  }
-
-  // 4. Deterministic State Machine
-  let status: QualificationStatus = "INCOMPLETE";
-  let statusReason = "";
-  let nextStep = "";
-
-  if (!isComplete) {
-    status = "INCOMPLETE";
-    statusReason = "Awaiting Core Data";
-    nextStep = "Enter volume + missed estimate to generate exposure.";
-  } else if (data.isBooked) {
-    // Booking supercedes everything if logically valid state
+  if (data.isBooked) {
     status = "BOOKED";
-    statusReason = "Booking Confirmed";
-    nextStep = "Ready for Closer Briefing.";
-  } else if (!data.dmConfirmed || !data.ownerAttending) {
-    // Only reachable if Complete + Not Booked
-    status = "DISQUALIFIED";
-    statusReason = "No Authority / Owner Absent";
-    nextStep = "Do not book — owner must attend verification.";
-  } else {
-    // Complete + Authority Confirmed + Not Booked
-    status = "QUALIFIED";
-    statusReason = "Verification Warranted";
-    nextStep = "This is worth a 15-minute verification against actual call logs.";
+    nextStep = "Verification Call Booked";
   }
 
   return {
-    missedCalls: missedCallsPerWeek,
-    monthlyExposure, // Can be 0 if inputs are 0, but never NaN
-    dailyExposure,
-    yearlyExposure,
     status,
-    statusReason,
-    nextStep,
-    certaintyLabel,
-    primaryConstraint
+    dailyExposure: activeResult.daily,
+    monthlyExposure: activeResult.monthly,
+    yearlyExposure: activeResult.yearly,
+    missedCalls: activeResult.missedMonthly, // Using Monthly for display as per context, or we can use weekly. The UI uses this for "Missed Calls" label. Let's align with v10.2: "Missed calls per month" is a key step.
+    fullExposure: fullResult.monthly,
+    conservativeExposure: conservativeResult.monthly,
+    nextStep
   };
 }
 
-export const formatCurrency = (value: number) => {
-  if (isNaN(value)) return "$0";
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  }).format(value);
-};
-
-export const formatCurrencyCompact = (value: number) => {
-  if (isNaN(value)) return "$0";
-  if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
-  if (value >= 1000) return `$${(value / 1000).toFixed(1)}k`;
-  return formatCurrency(value);
-};
+// Re-export old formatter for compatibility if needed, but prefer strict
+export const formatCurrency = formatCurrencyStrict; 

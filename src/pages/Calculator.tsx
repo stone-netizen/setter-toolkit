@@ -5,6 +5,7 @@ import { useCalculatorForm, INDUSTRIES, ROLES, LEAD_SOURCES, AFTER_HOURS_OPTIONS
 import { calculateCockpitResult, formatCurrency, formatCurrencyCompact } from "@/utils/calculations";
 import { ExposureExplanation } from "@/components/ExposureExplanation";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -290,50 +291,55 @@ export default function Calculator() {
           <div className="lg:col-span-7 space-y-8">
 
             {/* PHASE 1: CONVICTION CALCULATOR */}
-            <section className="p-8 rounded-[2rem] border border-white/5 bg-black space-y-8 shadow-2xl">
-              <div className="flex items-center gap-3">
-                <div className="h-1 w-6 bg-emerald-500 rounded-full" />
+            <section className="p-8 rounded-[2rem] border border-white/5 bg-black space-y-8 shadow-2xl relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+
+              <div className="flex items-center gap-3 relative z-10">
+                <div className="h-1 w-6 bg-emerald-500 rounded-full shadow-[0_0_12px_rgba(16,185,129,0.4)]" />
                 <h2 className="text-[11px] font-black uppercase tracking-widest text-slate-400">Phase 1: Conviction Calculator</h2>
               </div>
 
-              <div className="space-y-8">
+              <div className="space-y-8 relative z-10">
+                {/* Business Name */}
                 <div className="space-y-3">
-                  <Label className="text-[12px] font-black text-white/90 leading-tight italic flex items-center gap-1">
-                    “Which business are we looking at today?” <span className="text-emerald-500">•</span>
+                  <Label className="text-[12px] font-bold text-slate-300 uppercase tracking-wider">
+                    Which business are we looking at today?
                   </Label>
                   <Input
                     placeholder="Legal Business Name"
                     value={formData.businessName}
                     onChange={(e) => setFormData({ businessName: e.target.value })}
-                    className="bg-zinc-900/50 border-white/5 h-14 text-lg font-medium focus:border-emerald-500/50 transition-all"
+                    className="bg-zinc-900/50 border-white/5 h-12 text-base font-medium focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 transition-all rounded-2xl"
                   />
                 </div>
 
-                <div className="space-y-3 pt-4 border-t border-white/5">
-                  <Label className="text-[12px] font-black text-white/90 leading-tight italic flex items-center gap-1">
-                    “How many new inquiries do you typically receive each week?” <span className="text-emerald-500">•</span>
+                {/* Inquiries */}
+                <div className="space-y-3 pt-2">
+                  <Label className="text-[12px] font-bold text-slate-300 uppercase tracking-wider">
+                    Inbound inquiries per week
                   </Label>
                   <Input
                     type="number"
                     placeholder="New inquiries only"
                     value={formData.inquiresPerWeek || ""}
                     onChange={(e) => setFormData({ inquiresPerWeek: Math.max(0, parseInt(e.target.value) || 0) })}
-                    className="bg-zinc-900/50 border-white/5 h-14 text-lg font-medium focus:border-emerald-500/50 transition-all"
+                    className="bg-zinc-900/50 border-white/5 h-12 text-base font-medium focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 transition-all rounded-2xl"
                   />
                 </div>
 
+                {/* Missed Ratio (Segmented Control) */}
                 <div className="space-y-4 pt-4 border-t border-white/5">
-                  <Label className="text-[12px] font-black text-white/90 leading-tight">
-                    “Out of 10 new calls, how many typically don’t get answered live?”
+                  <Label className="text-[12px] font-bold text-slate-300 uppercase tracking-wider block">
+                    Missed calls per 10
                   </Label>
-                  <div className="grid grid-cols-6 gap-2">
+                  <div className="flex p-1 bg-zinc-900/50 border border-white/5 rounded-2xl overflow-hidden">
                     {[0, 1, 2, 3, 4, 5].map((val) => (
                       <button
                         key={val}
                         onClick={() => setFormData({ percentageRatio: val })}
-                        className={`h-12 rounded-xl text-xs font-black transition-all ${formData.percentageRatio === val
+                        className={`flex-1 h-10 text-xs font-black transition-all rounded-xl ${formData.percentageRatio === val
                           ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20'
-                          : 'bg-white/[0.03] border border-white/5 text-slate-500 hover:border-white/10'
+                          : 'text-slate-500 hover:text-white hover:bg-white/5'
                           }`}
                       >
                         {val}{val === 5 ? "+" : ""}
@@ -343,81 +349,95 @@ export default function Calculator() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-white/5">
+                  {/* Avg Ticket */}
                   <div className="space-y-3">
-                    <Label className="text-[12px] font-black text-white/90 leading-tight italic">
-                      “Average revenue per new client?” <span className="text-emerald-500">•</span>
+                    <Label className="text-[12px] font-bold text-slate-300 uppercase tracking-wider">
+                      Average revenue per new client
                     </Label>
-                    <Input
-                      type="number"
-                      placeholder="$ (Lower bound)"
-                      value={formData.avgTicket || ""}
-                      onChange={(e) => setFormData({ avgTicket: Math.max(0, parseInt(e.target.value) || 0) })}
-                      className="bg-zinc-900/50 border-white/5 h-14 text-lg font-medium focus:border-emerald-500/50 transition-all"
-                    />
-                  </div>
-                  <div className="space-y-3">
-                    <Label className="text-[12px] font-black text-white/90 leading-tight italic">
-                      “Close Rate on Qualified Leads?”
-                    </Label>
-                    <div className="flex items-center gap-4">
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold">$</span>
                       <Input
                         type="number"
-                        placeholder="%"
-                        value={formData.closeRate || ""}
-                        onChange={(e) => setFormData({ closeRate: Math.min(100, Math.max(0, parseInt(e.target.value) || 0)) })}
-                        className="bg-zinc-900/50 border-white/5 h-14 text-lg font-medium focus:border-emerald-500/50 transition-all w-24 text-center"
+                        placeholder="0"
+                        value={formData.avgTicket || ""}
+                        onChange={(e) => setFormData({ avgTicket: Math.max(0, parseInt(e.target.value) || 0) })}
+                        className="bg-zinc-900/50 border-white/5 h-12 pl-8 text-base font-medium focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 transition-all rounded-2xl"
                       />
-                      <div className="flex-1 space-y-2">
-                        <input
-                          type="range"
-                          min="0"
-                          max="100"
-                          value={formData.closeRate}
-                          onChange={(e) => setFormData({ closeRate: parseInt(e.target.value) })}
-                          className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer accent-emerald-500"
-                        />
-                        <div className="flex justify-between text-[10px] text-slate-500 font-bold uppercase tracking-widest">
-                          <span>0%</span>
-                          <span>Conservative (25%)</span>
-                          <span>100%</span>
-                        </div>
+                    </div>
+                  </div>
+
+                  {/* Close Rate Control Card */}
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <Label className="text-[12px] font-bold text-slate-300 uppercase tracking-wider">
+                        Close Rate on Missed Calls
+                      </Label>
+                      <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-500 rounded-md text-[10px] font-black">{formData.closeRate}%</span>
+                    </div>
+
+                    <div className="p-4 bg-zinc-900/30 border border-white/5 rounded-2xl space-y-6">
+                      <Slider
+                        value={[formData.closeRate]}
+                        min={0}
+                        max={100}
+                        step={1}
+                        onValueChange={(vals) => setFormData({ closeRate: vals[0] })}
+                        className="py-2"
+                      />
+                      <div className="flex gap-2 justify-between">
+                        {[
+                          { label: "Low", val: 20 },
+                          { label: "Recommended", val: 35 },
+                          { label: "High", val: 50 },
+                        ].map(opt => (
+                          <button
+                            key={opt.label}
+                            onClick={() => setFormData({ closeRate: opt.val })}
+                            className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider border transition-all ${formData.closeRate === opt.val
+                              ? 'bg-white text-black border-white'
+                              : 'bg-transparent text-slate-500 border-white/5 hover:border-white/20'
+                              }`}
+                          >
+                            {opt.label} ({opt.val}%)
+                          </button>
+                        ))}
                       </div>
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 gap-4">
-                    <div className="space-y-3">
-                      <Label className="text-[12px] font-black text-white/90 leading-tight italic">
-                        After-Hours Handling?
-                      </Label>
-                      <Select value={formData.afterHoursHandling} onValueChange={(v) => setFormData({ afterHoursHandling: v })}>
-                        <SelectTrigger className="bg-zinc-900/50 border-white/5 h-14">
-                          <SelectValue placeholder="Select Process" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-zinc-900 border-white/10 text-white font-sans">
-                          {AFTER_HOURS_OPTIONS.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-3">
-                      <Label className="text-[12px] font-black text-white/90 leading-tight italic">
-                        Industry?
-                      </Label>
-                      <Select value={formData.industry} onValueChange={(v) => {
-                        // Industry Default Logic for Close Rate
-                        let defaultRate = 25;
-                        if (v === "Dentist") defaultRate = 30;
-                        if (v === "HVAC") defaultRate = 25;
-                        if (v === "Med Spa") defaultRate = 20;
-                        setFormData({ industry: v, closeRate: defaultRate });
-                      }}>
-                        <SelectTrigger className="bg-zinc-900/50 border-white/5 h-14">
-                          <SelectValue placeholder="Select Industry" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-zinc-900 border-white/10 text-white font-sans">
-                          {INDUSTRIES.map(i => <SelectItem key={i} value={i}>{i}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-white/5">
+                  <div className="space-y-3">
+                    <Label className="text-[12px] font-bold text-slate-300 uppercase tracking-wider">
+                      After-hours handling
+                    </Label>
+                    <Select value={formData.afterHoursHandling} onValueChange={(v) => setFormData({ afterHoursHandling: v })}>
+                      <SelectTrigger className="bg-zinc-900/50 border-white/5 h-12 text-slate-300 focus:ring-1 focus:ring-emerald-500/20 rounded-2xl">
+                        <SelectValue placeholder="Select Process" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#0A0A0A] border-white/10 text-slate-300 font-sans">
+                        {AFTER_HOURS_OPTIONS.map(a => <SelectItem key={a} value={a} className="focus:bg-zinc-800 focus:text-white cursor-pointer">{a}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-3">
+                    <Label className="text-[12px] font-bold text-slate-300 uppercase tracking-wider">
+                      Industry
+                    </Label>
+                    <Select value={formData.industry} onValueChange={(v) => {
+                      let defaultRate = 25;
+                      if (v === "Dentist") defaultRate = 30;
+                      if (v === "HVAC") defaultRate = 25;
+                      if (v === "Med Spa") defaultRate = 20;
+                      setFormData({ industry: v, closeRate: defaultRate });
+                    }}>
+                      <SelectTrigger className="bg-zinc-900/50 border-white/5 h-12 text-slate-300 focus:ring-1 focus:ring-emerald-500/20 rounded-2xl">
+                        <SelectValue placeholder="Select Industry" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#0A0A0A] border-white/10 text-slate-300 font-sans">
+                        {INDUSTRIES.map(i => <SelectItem key={i} value={i} className="focus:bg-zinc-800 focus:text-white cursor-pointer">{i}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </div>
@@ -437,22 +457,22 @@ export default function Calculator() {
 
                   <div className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className={`p-4 rounded-xl border transition-all ${formData.dmConfirmed ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-zinc-900/30 border-white/5'}`}>
+                      <div className={`p-5 rounded-2xl border transition-all cursor-pointer ${formData.dmConfirmed ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-zinc-900/30 border-white/5'}`} onClick={() => setFormData({ dmConfirmed: !formData.dmConfirmed })}>
                         <div className="flex items-center justify-between">
                           <div className="space-y-1">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Decision Maker Confirmed?</Label>
-                            <p className="text-[8px] text-slate-600 uppercase font-bold">Must be confirmed to book</p>
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 pointer-events-none">Decision Maker Confirmed?</Label>
+                            <p className="text-[10px] text-slate-500 font-medium">Must be confirmed to book</p>
                           </div>
-                          <Checkbox checked={formData.dmConfirmed} onCheckedChange={(v) => setFormData({ dmConfirmed: !!v })} className="border-white/20 data-[state=checked]:bg-emerald-500" />
+                          <Checkbox checked={formData.dmConfirmed} onCheckedChange={(v) => setFormData({ dmConfirmed: !!v })} className="border-white/20 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-none" />
                         </div>
                       </div>
-                      <div className={`p-4 rounded-xl border transition-all ${formData.ownerAttending ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-zinc-900/30 border-white/5'}`}>
+                      <div className={`p-5 rounded-2xl border transition-all cursor-pointer ${formData.ownerAttending ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-zinc-900/30 border-white/5'}`} onClick={() => setFormData({ ownerAttending: !formData.ownerAttending })}>
                         <div className="flex items-center justify-between">
                           <div className="space-y-1">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Owner Attending Demo?</Label>
-                            <p className="text-[8px] text-slate-600 uppercase font-bold">Hard gate for verification</p>
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 pointer-events-none">Owner Attending Demo?</Label>
+                            <p className="text-[10px] text-slate-500 font-medium">Hard gate for verification</p>
                           </div>
-                          <Checkbox checked={formData.ownerAttending} onCheckedChange={(v) => setFormData({ ownerAttending: !!v })} className="border-white/20 data-[state=checked]:bg-emerald-500" />
+                          <Checkbox checked={formData.ownerAttending} onCheckedChange={(v) => setFormData({ ownerAttending: !!v })} className="border-white/20 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-none" />
                         </div>
                       </div>
                     </div>
@@ -645,161 +665,155 @@ export default function Calculator() {
 
           {/* Right Panel */}
           <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-8">
-            <section className={`p-10 rounded-[2.5rem] border transition-all flex flex-col items-center justify-center text-center space-y-10 min-h-[600px] shadow-2xl relative overflow-hidden bg-black ${result.status === 'BOOKED' ? 'border-emerald-500 border-2 shadow-emerald-500/10' :
-              result.status === 'QUALIFIED' ? 'border-emerald-500/50 shadow-emerald-500/5' :
+            <section className={`rounded-[2.5rem] border transition-all flex flex-col items-center justify-center text-center space-y-8 min-h-[600px] shadow-2xl relative overflow-hidden bg-black group ${result.status === 'BOOKED' ? 'border-emerald-500 border-2 shadow-emerald-500/20' :
+              result.status === 'QUALIFIED' ? 'border-emerald-500/50 shadow-emerald-500/10' :
                 result.status === 'DISQUALIFIED' ? 'border-red-500/30' : 'border-white/5'
               }`}>
               {/* Glassmorphism Background */}
-              <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/20 via-black to-black opacity-50 pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-b from-zinc-900 to-black pointer-events-none" />
+              <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150 pointer-events-none" />
 
-              <div className="space-y-6 w-full relative z-10">
-                {/* SETTER PROMPT BOX (Sticky) */}
-                <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl text-left space-y-2 relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 p-2 opacity-50"><MessageSquare className="w-4 h-4 text-emerald-500" /></div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500/80">Setter Script:</p>
-                  <p className="text-sm font-medium text-emerald-100 italic">"{getCurrentScript().text}"</p>
-                  <div className="flex items-center gap-2 pt-2">
-                    <div className="h-px bg-emerald-500/20 flex-1" />
-                    <span className="text-[9px] font-black uppercase text-emerald-500">{getCurrentScript().action}</span>
+              <div className="space-y-8 w-full relative z-10 p-10 flex flex-col h-full">
+
+                {/* SETTER SCRIPT CARD (Compact) */}
+                <div className="bg-zinc-900/80 backdrop-blur-md border border-white/10 p-4 rounded-2xl text-left relative group/script hover:border-emerald-500/30 transition-all">
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500 flex items-center gap-2">
+                        <MessageSquare className="w-3 h-3" />
+                        Setter Script
+                      </p>
+                      <p className="text-sm font-medium text-slate-200 italic leading-snug">"{getCurrentScript().text}"</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(getCurrentScript().text);
+                        toast.success("Script Copied");
+                      }}
+                      className="p-2 hover:bg-white/10 rounded-lg text-slate-500 hover:text-white transition-all"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
 
-                <div className={`px-5 py-2 rounded-full font-black uppercase italic tracking-widest text-[9px] inline-flex items-center gap-2 ${result.status === 'BOOKED' ? 'bg-emerald-500 text-black' :
-                  result.status === 'QUALIFIED' ? 'bg-emerald-500/20 text-emerald-500 border border-emerald-500/30' :
-                    result.status === 'INCOMPLETE' ? 'bg-zinc-900 text-slate-500' :
-                      'bg-red-500/10 text-red-500/80 border border-red-500/20'
-                  }`}>
-                  {result.status === 'BOOKED' ? <CheckCircle2 className="w-3.5 h-3.5" /> :
-                    result.status === 'QUALIFIED' ? <ShieldCheck className="w-3.5 h-3.5" /> :
-                      <AlertCircle className="w-3.5 h-3.5" />}
-                  {result.status.replace(/-/g, ' ')}
-                </div>
+                <div className="flex-1 flex flex-col items-center justify-center space-y-8">
 
-                {/* VISUALIZER TOGGLE */}
-                <div className="flex justify-center">
-                  <div className="bg-black/40 border border-white/10 p-1 rounded-lg flex items-center gap-1">
+                  {/* CONSERVATIVE / FULL TOGGLE */}
+                  <div className="bg-zinc-900 p-1 rounded-xl inline-flex border border-white/5">
                     <button
                       onClick={() => setExposureMode('floor')}
-                      className={`px-3 py-1.5 rounded-md text-[9px] font-black uppercase tracking-widest transition-all ${exposureMode === 'floor' ? 'bg-white text-black' : 'text-slate-500 hover:text-white'}`}
+                      className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all gap-2 flex items-center ${exposureMode === 'floor'
+                        ? 'bg-white text-black shadow-lg'
+                        : 'text-slate-500 hover:text-slate-300'
+                        }`}
                     >
-                      ● Conservative
+                      Conservative
                     </button>
                     <button
                       onClick={() => setExposureMode('full')}
-                      className={`px-3 py-1.5 rounded-md text-[9px] font-black uppercase tracking-widest transition-all ${exposureMode === 'full' ? 'bg-emerald-500 text-black' : 'text-slate-500 hover:text-white'}`}
+                      className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all gap-2 flex items-center ${exposureMode === 'full'
+                        ? 'bg-emerald-500 text-black shadow-lg'
+                        : 'text-slate-500 hover:text-slate-300'
+                        }`}
                     >
-                      ○ Full Exposure
+                      Full Exposure
                     </button>
+                  </div>
+
+                  {/* MAIN NUMBER DISPLAY */}
+                  <div className="space-y-2 text-center">
+                    <div className="flex items-center justify-center gap-2 text-[11px] font-black uppercase tracking-widest text-slate-500">
+                      <span>Monthly Loss</span>
+                      <button onClick={() => setShowExplanation(true)} className="text-slate-600 hover:text-emerald-500">
+                        <Info className="w-3 h-3" />
+                      </button>
+                    </div>
+
+                    <div className={`text-7xl md:text-8xl font-black tracking-tighter tabular-nums leading-none transition-all ${result.status === 'INCOMPLETE' ? 'text-zinc-800' : 'text-white drop-shadow-2xl'
+                      }`}>
+                      {result.status === 'INCOMPLETE' ? "$0" : formatCurrencyCompact(result.monthlyExposure)}
+                    </div>
+
+                    {/* Helper text under toggle */}
+                    <p className="text-[9px] uppercase tracking-wider text-slate-600 font-bold">
+                      {exposureMode === 'floor' ? 'Confirmed Floor (Min)' : 'Est. Full Leakage (Max)'}
+                    </p>
+                  </div>
+
+                  {/* DAILY / YEARLY COLUMNS */}
+                  {result.monthlyExposure > 0 && (
+                    <div className="grid grid-cols-2 gap-8 w-full max-w-xs pt-4 border-t border-white/5">
+                      <div className="text-center space-y-1">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-600">Daily Loss</p>
+                        <p className="text-lg font-bold text-slate-400 tabular-nums">{formatCurrencyCompact(result.dailyExposure)}</p>
+                      </div>
+                      <div className="text-center space-y-1 border-l border-white/5 pl-8">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-600">Yearly Loss</p>
+                        <p className="text-lg font-bold text-slate-400 tabular-nums">{formatCurrencyCompact(result.yearlyExposure)}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* OPERATIONAL DIRECTIVE */}
+                  <div className="bg-emerald-500/5 px-4 py-2 rounded-full border border-emerald-500/10">
+                    <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider flex items-center gap-2">
+                      <Zap className="w-3 h-3" />
+                      Worth verifying against call logs
+                    </p>
                   </div>
                 </div>
 
-                <div className="space-y-1 relative">
-                  <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-700 italic flex items-center justify-center gap-2">
-                    {exposureMode === 'floor' ? 'Confirmed Floor Exposure' : 'Est. Full Revenue Leak'}
-                    <button
-                      onClick={() => setShowExplanation(true)}
-                      className="text-slate-600 hover:text-emerald-500 transition-colors"
-                    >
-                      <Info className="w-3.5 h-3.5" />
-                    </button>
-                  </p>
+                {/* CTAs */}
+                <div className="w-full space-y-3 pt-4">
+                  <Button
+                    onClick={() => window.open('https://calendly.com/stone-qualai/30min', '_blank')}
+                    className="w-full h-14 bg-emerald-500 hover:bg-emerald-400 text-black font-black uppercase tracking-wide text-xs rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all hover:scale-[1.02]"
+                  >
+                    Book 15-Min Verification Call
+                  </Button>
+
+                  <Button
+                    disabled={!isDownloadReady}
+                    onClick={handleDownloadCSV}
+                    variant="ghost"
+                    className={`w-full h-12 font-bold uppercase tracking-wide text-[10px] rounded-xl border transition-all ${isDownloadReady
+                      ? 'bg-white/[0.05] border-white/10 text-white hover:bg-white/10'
+                      : 'bg-transparent border-transparent text-slate-700 cursor-not-allowed'
+                      }`}
+                  >
+                    <Download className="w-3 h-3 mr-2" />
+                    Download Business Case CSV
+                  </Button>
                 </div>
 
-                <div className={`text-7xl font-black italic tracking-tighter tabular-nums transition-all ${result.status === 'INCOMPLETE' ? 'text-slate-800' : 'text-white'
-                  }`}>
-                  {result.status === 'INCOMPLETE' ? "$0" : formatCurrency(result.monthlyExposure)}
-                </div>
-
-                {/* DAILY / YEARLY CONTEXT */}
-                {result.monthlyExposure > 0 && (
-                  <div className="flex justify-center gap-4 text-slate-500">
-                    <div className="flex flex-col items-center">
-                      <span className="text-[9px] font-black uppercase tracking-widest">Daily</span>
-                      <span className="text-xs font-bold text-slate-300">{formatCurrency(result.dailyExposure)}</span>
+                {!isDownloadReady && formData.isBooked && (
+                  <div className="space-y-2">
+                    <p className="text-[8px] text-slate-600 font-bold uppercase tracking-widest">Awaiting 16+ Mandatory Fields:</p>
+                    <div className="flex flex-wrap gap-1 justify-center">
+                      {[
+                        { label: "BIZ", met: !!formData.businessName },
+                        { label: "EMAIL", met: !!formData.email },
+                        { label: "NAME", met: !!formData.contactName },
+                        { label: "ROLE", met: !!formData.contactRole },
+                        { label: "PAIN", met: !!formData.mainPain },
+                        { label: "DM", met: formData.dmConfirmed },
+                        { label: "OWNER", met: formData.ownerAttending }
+                      ].map(f => (
+                        <span key={f.label} className={`px-2 py-0.5 rounded-sm text-[7px] font-black ${f.met ? 'bg-emerald-500/20 text-emerald-500' : 'bg-red-500/10 text-red-500/40'}`}>
+                          {f.label}{f.met ? " ✓" : ""}
+                        </span>
+                      ))}
                     </div>
-                    <div className="w-px bg-white/10" />
-                    <div className="flex flex-col items-center">
-                      <span className="text-[9px] font-black uppercase tracking-widest">Yearly</span>
-                      <span className="text-xs font-bold text-slate-300">{formatCurrencyCompact(result.yearlyExposure)}</span>
-                    </div>
-                  </div>
-                )}
-
-
-                <div className="pt-8 w-full border-t border-white/5 space-y-4">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-700 italic">Operational Directive:</p>
-                  <p className={`text-lg font-black italic leading-tight text-center ${result.status === 'BOOKED' || result.status === 'QUALIFIED' ? 'text-emerald-500' :
-                    result.status === 'DISQUALIFIED' ? 'text-red-500' : 'text-slate-600'
-                    }`}>
-                    {result.status === 'INCOMPLETE' ? "Awaiting conviction data..." : result.nextStep}
-                  </p>
-                </div>
-              </div>
-
-              {/* SYSTEM STATUS BOX - REMOVED (Redundant) */}
-
-              {/* ACTION: GENERATE ROW */}
-              <AnimatePresence>
-                {formData.isBooked && (
-                  <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="w-full mt-auto space-y-3">
-                    <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
-                      <p className="text-[9px] text-emerald-500/80 italic font-black uppercase">Booking Secured. Export Ready.</p>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-3">
-                      <Button
-                        onClick={() => window.open('https://calendly.com/stone-qualai/30min', '_blank')}
-                        className="w-full h-18 bg-emerald-500 hover:bg-emerald-400 text-black font-black uppercase italic text-sm rounded-2xl shadow-xl shadow-emerald-500/20 gap-3 group animate-pulse"
-                      >
-                        <Calendar className="w-6 h-6" />
-                        Book 1-on-1 Strategy Call
-                        <ExternalLink className="w-4 h-4" />
-                      </Button>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {/* Sync Button Removed - Purely Local */}
-                        <Button
-                          disabled={!isDownloadReady}
-                          onClick={handleDownloadCSV}
-                          className={`h-14 font-black uppercase italic text-[10px] rounded-2xl gap-2 transition-all ${isDownloadReady
-                            ? 'bg-white text-black hover:bg-slate-200 shadow-xl'
-                            : 'bg-zinc-900 text-slate-700 border border-white/5 cursor-not-allowed shadow-none'
-                            }`}
-                        >
-                          <Download className="w-3.5 h-3.5" />
-                          Download CSV
-                        </Button>
-                      </div>
-                    </div>
-
-                    {!isDownloadReady && formData.isBooked && (
-                      <div className="space-y-2">
-                        <p className="text-[8px] text-slate-600 font-bold uppercase tracking-widest">Awaiting 16+ Mandatory Fields:</p>
-                        <div className="flex flex-wrap gap-1 justify-center">
-                          {[
-                            { label: "BIZ", met: !!formData.businessName },
-                            { label: "EMAIL", met: !!formData.email },
-                            { label: "NAME", met: !!formData.contactName },
-                            { label: "ROLE", met: !!formData.contactRole },
-                            { label: "PAIN", met: !!formData.mainPain },
-                            { label: "DM", met: formData.dmConfirmed },
-                            { label: "OWNER", met: formData.ownerAttending }
-                          ].map(f => (
-                            <span key={f.label} className={`px-2 py-0.5 rounded-sm text-[7px] font-black ${f.met ? 'bg-emerald-500/20 text-emerald-500' : 'bg-red-500/10 text-red-500/40'}`}>
-                              {f.label}{f.met ? " ✓" : ""}
-                            </span>
-                          ))}
-                        </div>
-                        {(!formData.dmConfirmed || !formData.ownerAttending) && (
-                          <p className="text-[7px] text-red-500 font-black uppercase italic animate-pulse">
-                            Blocked: Authority Gates must be TRUE
-                          </p>
-                        )}
-                      </div>
+                    {(!formData.dmConfirmed || !formData.ownerAttending) && (
+                      <p className="text-[7px] text-red-500 font-black uppercase italic animate-pulse">
+                        Blocked: Authority Gates must be TRUE
+                      </p>
                     )}
-                  </motion.div>
+                  </div>
                 )}
-              </AnimatePresence>
+
+              </div>
             </section>
 
             {/* EXPLANATION MODAL */}
