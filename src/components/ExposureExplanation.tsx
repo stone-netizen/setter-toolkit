@@ -45,13 +45,14 @@ export function ExposureExplanation({ isOpen, onClose, inputs }: ExposureExplana
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md" onClick={onClose}>
             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
+                onClick={(e) => e.stopPropagation()}
                 className="w-full max-w-3xl bg-black relative border border-white/10 rounded-[2rem] shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
-                style={{ backgroundColor: "#09090b" }}
+                style={{ backgroundColor: "#000000" }}
             >
                 {/* Header */}
                 <div className="flex items-center justify-between p-8 border-b border-white/5 bg-white/[0.02]">
