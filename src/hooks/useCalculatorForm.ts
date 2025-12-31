@@ -15,24 +15,23 @@ export const INDUSTRIES = [
 export const ROLES = [
   "Owner",
   "Partner",
-  "GM",
+  "Manager",
   "Other"
 ] as const;
 
 export const LEAD_SOURCES = [
-  "Google Ads",
   "Paid Ads",
-  "Social Media",
   "Referrals",
-  "Mixed",
+  "SEO",
+  "Organic",
+  "Social Media",
   "Other"
 ] as const;
 
 export const AFTER_HOURS_OPTIONS = [
   "Voicemail",
-  "Staff",
-  "Answer Service",
-  "AI",
+  "Answering Service",
+  "None",
   "Other"
 ] as const;
 

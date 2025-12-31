@@ -109,41 +109,40 @@ export default function Calculator() {
 
     const getExportStatus = (status: string) => {
       if (status === "BOOKED") return "BOOKED";
-      if (status === "QUALIFIED") return "QUALIFIED";
+      if (status === "QUALIFIED") return "VERIFIED";
       if (status === "DISQUALIFIED") return "DISQUALIFIED";
-      return "INCOMPLETE";
+      return "FOLLOW UP";
     };
 
     const row = [
-      escape(formData.businessName),      // 1
-      escape(formData.website),           // 2
-      escape(formData.email),             // 3
-      escape(formData.industry),          // 4
-      escape(formData.location),          // 5
-      escape(formData.contactName),       // 6
-      escape(formData.phone),             // 7
-      formData.urgency,                   // 8
-      escape(formData.primaryLeadSource), // 9
-      escape(formData.contactRole),       // 10
-      escape(formData.mainPain),           // 11
-      escape(formData.consequence),        // 12
-      formData.inquiresPerWeek,            // 13
-      result.missedCalls,                 // 14
-      formData.avgTicket,                 // 15
-      escape(formData.afterHoursHandling),// 16
-      result.monthlyExposure,             // 17
-      result.status === "BOOKED" || result.status === "QUALIFIED" ? "QUALIFIED" : "DISQUALIFIED", // 18
-      formData.dmConfirmed ? "TRUE" : "FALSE",    // 19
-      formData.ownerAttending ? "TRUE" : "FALSE", // 20
-      formatDate(formData.demoDate),      // 21
-      formatTime(formData.demoTime),      // 22
-      escape(formData.assignedCloser),    // 23
-      escape(formData.closerFeedback),    // 24
-      getExportStatus(result.status)      // 25
+      escape(formData.businessName),      // 1. Business Name
+      escape(formData.website),           // 2. Website
+      escape(formData.email),             // 3. Email
+      escape(formData.industry),          // 4. Industry
+      escape(formData.location),          // 5. City/State
+      escape(formData.contactName),       // 6. Decision Maker Name
+      escape(formData.phone),             // 7. Phone
+      formData.urgency,                   // 8. Urgency (1–10)
+      escape(formData.primaryLeadSource), // 9. Primary Lead Source
+      escape(formData.contactRole),       // 10. Role
+      escape(formData.mainPain),          // 11. Main Pain
+      escape(formData.consequence),       // 12. Consequence
+      formData.inquiresPerWeek,           // 13. Inbound Calls / Week
+      result.missedCalls,                 // 14. Missed Calls / Week
+      formData.avgTicket,                 // 15. Avg Ticket
+      escape(formData.afterHoursHandling),// 16. After Hours Handling
+      result.monthlyExposure,             // 17. Base Revenue Leak
+      formData.dmConfirmed ? "TRUE" : "FALSE",    // 18. DM Confirmed
+      formData.ownerAttending ? "TRUE" : "FALSE", // 19. Owner Attending
+      formatDate(formData.demoDate),      // 20. Demo Date
+      formatTime(formData.demoTime),      // 21. Demo Time
+      escape(formData.assignedCloser),    // 22. Assigned Closer
+      escape(formData.closerFeedback),    // 23. Closer Feedback
+      getExportStatus(result.status)      // 24. Status
     ];
 
     navigator.clipboard.writeText(row.join(","));
-    toast.success("25-Column CSV Row Copied");
+    toast.success("24-Column CSV Row Copied");
   };
 
   const handleDownloadCSV = () => {
@@ -157,9 +156,9 @@ export default function Calculator() {
 
     const getExportStatus = (status: string) => {
       if (status === "BOOKED") return "BOOKED";
-      if (status === "QUALIFIED") return "QUALIFIED";
+      if (status === "QUALIFIED") return "VERIFIED";
       if (status === "DISQUALIFIED") return "DISQUALIFIED";
-      return "INCOMPLETE";
+      return "FOLLOW UP";
     };
 
     // Single row, strict order per "Setter Briefcase" spec
@@ -174,21 +173,20 @@ export default function Calculator() {
       formData.urgency,           // 8
       formData.primaryLeadSource, // 9
       formData.contactRole,       // 10
-      formData.mainPain,           // 11
-      formData.consequence,        // 12
-      formData.inquiresPerWeek,    // 13
+      formData.mainPain,          // 11
+      formData.consequence,       // 12
+      formData.inquiresPerWeek,   // 13
       result.missedCalls,         // 14
       formData.avgTicket,         // 15
       formData.afterHoursHandling,// 16
       result.monthlyExposure,     // 17
-      getExportStatus(result.status), // 18
-      formData.dmConfirmed ? "TRUE" : "FALSE",    // 19
-      formData.ownerAttending ? "TRUE" : "FALSE", // 20
-      formatDate(formData.demoDate),      // 21
-      formatTime(formData.demoTime),      // 22
-      formData.assignedCloser,    // 23
-      formData.closerFeedback,    // 24
-      getExportStatus(result.status) // 25
+      formData.dmConfirmed ? "TRUE" : "FALSE",    // 18
+      formData.ownerAttending ? "TRUE" : "FALSE", // 19
+      formatDate(formData.demoDate),      // 20
+      formatTime(formData.demoTime),      // 21
+      formData.assignedCloser,    // 22
+      formData.closerFeedback,    // 23
+      getExportStatus(result.status) // 24
     ];
 
     // No headers, just the row content
