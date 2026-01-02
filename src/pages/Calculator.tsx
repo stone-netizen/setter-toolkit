@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Copy, RotateCcw, ChevronDown, ChevronUp, CheckCircle2, AlertCircle, Info, BookOpen, ExternalLink, GraduationCap, Gavel, HelpCircle, Lock, ArrowRight, ClipboardCheck, Download, Search, Globe, UserCheck, ShieldCheck, Zap, Calendar, Clock, User, Phone, MessageSquare, AlertTriangle } from "lucide-react";
+import { Copy, RotateCcw, ChevronDown, ChevronUp, CheckCircle2, AlertCircle, Info, BookOpen, ExternalLink, GraduationCap, Gavel, HelpCircle, Lock, ArrowRight, ClipboardCheck, Download, Search, Globe, UserCheck, ShieldCheck, Zap, Calendar, Clock, User, Phone, MessageSquare, AlertTriangle, ShieldAlert } from "lucide-react";
 import { useCalculatorForm, INDUSTRIES, ROLES, LEAD_SOURCES, AFTER_HOURS_OPTIONS, CLOSERS } from "@/hooks/useCalculatorForm";
 import { calculateCockpitResult, formatCurrency, formatCurrencyCompact } from "@/utils/calculations";
 import { ExposureExplanation } from "@/components/ExposureExplanation";
@@ -697,26 +697,14 @@ export default function Calculator() {
 
                 <div className="flex-1 flex flex-col items-center justify-center space-y-8">
 
-                  {/* CONSERVATIVE / FULL TOGGLE */}
-                  <div className="bg-zinc-900 p-1 rounded-xl inline-flex border border-white/5">
-                    <button
-                      onClick={() => setExposureMode('floor')}
-                      className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all gap-2 flex items-center ${exposureMode === 'floor'
-                        ? 'bg-white text-black shadow-lg'
-                        : 'text-slate-500 hover:text-slate-300'
-                        }`}
-                    >
-                      Conservative
-                    </button>
-                    <button
-                      onClick={() => setExposureMode('full')}
-                      className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all gap-2 flex items-center ${exposureMode === 'full'
-                        ? 'bg-emerald-500 text-black shadow-lg'
-                        : 'text-slate-500 hover:text-slate-300'
-                        }`}
-                    >
-                      Full Exposure
-                    </button>
+                  {/* CONSERVATIVE EXPOSURE LABEL */}
+                  <div className="bg-zinc-900/50 px-4 py-2 rounded-xl inline-flex border border-white/10">
+                    <div className="flex items-center gap-2">
+                      <ShieldAlert className="w-3.5 h-3.5 text-emerald-500" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">
+                        Conservative Exposure
+                      </span>
+                    </div>
                   </div>
 
                   {/* MAIN NUMBER DISPLAY */}
@@ -733,9 +721,9 @@ export default function Calculator() {
                       {result.status === 'INCOMPLETE' ? "$0" : formatCurrencyCompact(result.monthlyExposure)}
                     </div>
 
-                    {/* Helper text under toggle */}
+                    {/* Helper text */}
                     <p className="text-[9px] uppercase tracking-wider text-slate-600 font-bold">
-                      {exposureMode === 'floor' ? 'Confirmed Floor (Min)' : 'Est. Full Leakage (Max)'}
+                      Confirmed Floor (Min)
                     </p>
                   </div>
 
